@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: #f5f7fb;
+  --foreground: #101828;
+  --muted: #64748b;
+  --card: #ffffff;
+  --line: #dbe4ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(245, 247, 251, 0.92), rgba(245, 247, 251, 1)),
+    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.10), transparent 30%),
+    radial-gradient(circle at 86% 4%, rgba(15, 159, 110, 0.09), transparent 28%);
+  color: var(--foreground);
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.dashboard-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(2, 6, 23, 0.58);
+  backdrop-filter: blur(18px);
+}
+
+.card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
