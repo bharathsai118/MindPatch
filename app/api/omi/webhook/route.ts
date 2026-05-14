@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeReasoningSession } from "@/lib/agents/workflow";
 import { DEMO_PROBLEM_TEXT } from "@/lib/demo-data";
+import type { AnalysisResult } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,14 +60,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const analysis = await analyzeReasoningSession({
-    problem_name: payload.problem_name ?? "Omi Captured DSA Session",
-    problem_text: payload.problem_text ?? DEMO_PROBLEM_TEXT,
-    transcript,
-    topic: payload.topic ?? "DSA reasoning",
-    difficulty: payload.difficulty ?? "unknown",
-    user_id: "demo_user"
-  });
+  let analysis: AnalysisResult;
+  try {
+    analysis = await analyzeReasoningSession({
+      problem_name: payload.problem_name ?? "Omi Captured DSA Session",
+      problem_text: payload.problem_text ?? DEMO_PROBLEM_TEXT,
+      transcript,
+      topic: payload.topic ?? "DSA reasoning",
+      difficulty: payload.difficulty ?? "unknown",
+      user_id: "demo_user"
+    });
+  } catch (caught) {
+    return NextResponse.json(
+      {
+        error:
+          caught instanceof Error
+            ? caught.message
+            : "Omi analysis failed during live agent execution."
+      },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({
     session_id: analysis.session_id,

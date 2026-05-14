@@ -40,7 +40,7 @@ export function mockTranscriptCleaner(
   return {
     cleaned_transcript: cleaned,
     student_intent:
-      `The student is trying to solve ${input.problem_name} by transforming the input first, then inferring uniqueness from the transformed string.`,
+      `The student is trying to solve ${input.problem_name} using the approach described in their spoken reasoning.`,
     problem_detected: input.problem_name || DEMO_PROBLEM_NAME
   };
 }
@@ -175,6 +175,23 @@ export function mockSocraticCoach(args: {
   memoryReplay: MemoryReplay;
 }): SocraticRepair {
   if (args.mistake.mistake_type === "constraint_misunderstanding") {
+    const isTwoPointerPrecondition =
+      args.mistake.mistake_summary.toLowerCase().includes("two pointer") ||
+      args.mistake.correct_pattern.toLowerCase().includes("sorted");
+
+    if (isTwoPointerPrecondition) {
+      return {
+        socratic_question:
+          "What ordering fact lets a two-pointer move eliminate candidates safely?",
+        hint:
+          "Try the pointer movement rule on an unsorted array. When the sum is too small, do you actually know which pointer should move?",
+        correction:
+          "Two pointers need a sorted-order invariant. If the input is not sorted, use a hash map for one-pass lookup or sort paired values while preserving original indices.",
+        mini_rule:
+          "Before using two pointers, verify the order invariant that makes each pointer move logically safe."
+      };
+    }
+
     return {
       socratic_question:
         "What does the word substring require that sorting destroys?",
@@ -206,6 +223,44 @@ export function mockTrainingPlan(args: {
   topic: string;
 }): TrainingPlan {
   if (args.mistake.mistake_type === "constraint_misunderstanding") {
+    const isTwoPointerPrecondition =
+      args.mistake.mistake_summary.toLowerCase().includes("two pointer") ||
+      args.mistake.correct_pattern.toLowerCase().includes("sorted");
+
+    if (isTwoPointerPrecondition) {
+      return {
+        weakness_pattern:
+          "Applying a familiar pointer pattern before proving the ordering precondition that makes pointer movement safe.",
+        practice_tasks: [
+          {
+            problem_name: "Two Sum",
+            topic: "Arrays",
+            goal: "Choose hash map vs two pointers based on sorted-order guarantees.",
+            why_this_problem:
+              "It directly repairs the precondition miss by forcing the student to preserve original indices."
+          },
+          {
+            problem_name: "Two Sum II - Input Array Is Sorted",
+            topic: "Arrays",
+            goal: "Practice the valid case where two-pointer movement is justified.",
+            why_this_problem:
+              "It contrasts the same target condition under a sorted input precondition."
+          },
+          {
+            problem_name: "3Sum",
+            topic: "Two Pointers",
+            goal: "Sort intentionally while tracking when indices and duplicates matter.",
+            why_this_problem:
+              "It trains careful use of sorting only when the output contract allows it."
+          }
+        ],
+        micro_drill:
+          "For five array problems, write whether the input is sorted, whether original indices matter, and what each pointer move proves.",
+        daily_reflection:
+          "Before choosing two pointers, ask: what monotonic fact tells me this move cannot skip the answer?"
+      };
+    }
+
     return {
       weakness_pattern:
         "Applying a familiar transformation before checking whether it preserves ordering, contiguity, and algorithm preconditions.",

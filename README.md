@@ -74,11 +74,12 @@ Expected cognitive bug:
 
 - **Omi = ambient reasoning capture.** The student explains their approach out loud while solving; MindPatch receives the transcript through `/api/omi/webhook` or the manual/demo input.
 - **Lyzr = autonomous agent orchestration.** MindPatch models the workflow as specialized agents for cleaning, tracing, classifying, retrieving memory, coaching, and planning.
+- **Hugging Face = live model execution.** When `HF_TOKEN` or `HUGGINGFACE_API_KEY` is present, the same agents call a real Hugging Face chat model instead of mock outputs.
 - **Qdrant = long-term cognitive mistake memory.** Mistakes are embedded semantically so the system can replay similar prior failures across DSA topics.
 
 If credentials are missing, the app still works:
 
-- Missing Lyzr credentials activate realistic mock agent outputs.
+- Missing Lyzr and Hugging Face credentials activate realistic mock agent outputs.
 - Missing Qdrant credentials activate local mock vector memory.
 - Missing embedding credentials activate deterministic local embeddings.
 
@@ -95,12 +96,13 @@ This makes the hackathon demo reliable while still showing exactly where live in
 - Judge Demo Mode
 - Omi webhook endpoint
 - Lyzr adapter with fallback workflow
+- Hugging Face model adapter for live DSA reasoning analysis
 - Qdrant adapter with mock vector memory
 
 ## Architecture
 
 ```text
-Omi -> MindPatch Backend -> Lyzr Agents -> Qdrant Memory -> Dashboard
+Omi -> MindPatch Backend -> Lyzr/Hugging Face Agents -> Qdrant Memory -> Dashboard
 ```
 
 Workflow agents:
@@ -137,12 +139,39 @@ http://localhost:3000
 
 ```bash
 OMI_WEBHOOK_SECRET=
+AGENT_PROVIDER=auto
 LYZR_API_KEY=
 LYZR_AGENT_ID=
+HF_TOKEN=
+HUGGINGFACE_API_KEY=
+HUGGINGFACE_HUB_TOKEN=
+HUGGINGFACE_MODEL=google/gemma-4-31B-it
+HUGGINGFACE_API_BASE=https://router.huggingface.co/v1
 QDRANT_URL=
 QDRANT_API_KEY=
 OPENAI_API_KEY=
 ```
+
+### Live Hugging Face Mode
+
+To run MindPatch with a real Hugging Face model:
+
+1. Create a Hugging Face token with permission to make Inference Provider calls.
+2. Add it to `.env.local` as `HF_TOKEN=...` or `HUGGINGFACE_API_KEY=...`.
+3. Set `AGENT_PROVIDER=huggingface`.
+4. Keep `HUGGINGFACE_MODEL=google/gemma-4-31B-it` for the hosted router.
+5. Restart `npm run dev`.
+
+The app badge will change to **Live HF Model** and arbitrary user transcripts will be analyzed by the Hugging Face model.
+
+The suggested `google/gemma-4-31B-it-assistant` model is an assistant/drafter checkpoint for Gemma speculative decoding. Its model card shows it is usable through Transformers/local apps, but the hosted Inference Providers path is available from the Gemma model page for `google/gemma-4-31B-it`. For a custom deployment, set:
+
+```bash
+HUGGINGFACE_API_BASE=http://localhost:8000/v1
+HUGGINGFACE_MODEL=google/gemma-4-31B-it-assistant
+```
+
+Any OpenAI-compatible Hugging Face dedicated endpoint, local vLLM server, or router endpoint can be used through the same variables.
 
 ## API Routes
 
@@ -236,7 +265,7 @@ The current version fixes those issues by making the cognitive-debugging loop vi
 MindPatch shows a complete autonomous learning loop:
 
 ```text
-Omi speech capture -> Lyzr agent reasoning -> Qdrant mistake replay -> Socratic repair -> personalized practice -> progress score
+Omi speech capture -> Lyzr/Hugging Face agent reasoning -> Qdrant mistake replay -> Socratic repair -> personalized practice -> progress score
 ```
 
 That loop is the product. The answer is secondary.

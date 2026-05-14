@@ -152,9 +152,10 @@ export default function HomePage() {
                 Run the complete cognitive debugging demo.
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                The fallback adapters keep the demo reliable, while the code
-                clearly marks where Omi, Lyzr, and Qdrant connect in a live
-                deployment.
+                Add a Hugging Face token to run the cognitive agents through a
+                live Gemma model, or keep Lyzr/Qdrant credentials for the full
+                ecosystem path. Fallback adapters only activate when live keys
+                are absent.
               </p>
             </div>
             <Link

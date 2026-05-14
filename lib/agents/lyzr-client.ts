@@ -1,4 +1,5 @@
 import { getIntegrationStatus } from "@/lib/config";
+import { extractJson, isRecord } from "@/lib/agents/json-utils";
 
 type LyzrResponse = {
   response?: string;
@@ -6,27 +7,13 @@ type LyzrResponse = {
   output?: unknown;
 };
 
-function extractJson(text: string): unknown | null {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1] ?? text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(candidate.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-}
-
 export async function invokeLyzrJson<T>(args: {
   agentName: string;
   sessionId: string;
   prompt: string;
-  fallback: () => Promise<T> | T;
-}): Promise<T> {
+}): Promise<T | null> {
   if (!getIntegrationStatus().lyzrConfigured) {
-    return args.fallback();
+    return null;
   }
 
   try {
@@ -48,17 +35,17 @@ export async function invokeLyzrJson<T>(args: {
       })
     });
 
-    if (!response.ok) return args.fallback();
+    if (!response.ok) return null;
 
     const body = (await response.json()) as LyzrResponse;
-    if (typeof body.output === "object" && body.output) {
+    if (isRecord(body.output)) {
       return body.output as T;
     }
 
     const text = body.response ?? body.message ?? "";
     const parsed = extractJson(text);
-    return parsed ? (parsed as T) : args.fallback();
+    return parsed ? (parsed as T) : null;
   } catch {
-    return args.fallback();
+    return null;
   }
 }

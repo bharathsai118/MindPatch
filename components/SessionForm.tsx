@@ -29,7 +29,7 @@ const workflowStages = [
     label: "Cleaner agent extracts intent",
     agent: "Transcript Cleaner Agent",
     description:
-      "Finds the student's actual mental move: sorting first, then treating uniqueness as if it preserved substring constraints.",
+      "Finds the student's actual mental move, intended algorithm, and hidden assumptions from the transcript.",
     artifact: "cleaned transcript + student intent"
   },
   {
@@ -50,7 +50,7 @@ const workflowStages = [
     label: "Cognitive bug classified",
     agent: "Mistake Classifier Agent",
     description:
-      "Names the hidden bug: sorting destroys the original contiguous substring invariant.",
+      "Names the hidden cognitive bug, cites transcript evidence, and explains which invariant or precondition broke.",
     artifact: "cognitive bug report"
   },
   {

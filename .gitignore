@@ -11,4 +11,4 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 tsconfig.tsbuildinfo
-data/mindpatch-db.json
+data/mindpatch-db*.json

@@ -28,6 +28,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const analysis = await analyzeReasoningSession(parsed.data);
-  return NextResponse.json(analysis);
+  try {
+    const analysis = await analyzeReasoningSession(parsed.data);
+    return NextResponse.json(analysis);
+  } catch (caught) {
+    return NextResponse.json(
+      {
+        error:
+          caught instanceof Error
+            ? caught.message
+            : "Analysis failed during live agent execution."
+      },
+      { status: 502 }
+    );
+  }
 }

@@ -13,6 +13,7 @@ import { MemoryReplayCard } from "@/components/MemoryReplayCard";
 import { ReasoningTraceCard } from "@/components/ReasoningTraceCard";
 import { SocraticRepairCard } from "@/components/SocraticRepairCard";
 import { TrainingPlanCard } from "@/components/TrainingPlanCard";
+import { getIntegrationStatus } from "@/lib/config";
 import { getAnalysisById } from "@/lib/storage/json-store";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ type AnalysisPageProps = {
 export default async function AnalysisPage({ params }: AnalysisPageProps) {
   const { sessionId } = await params;
   const analysis = await getAnalysisById(sessionId);
+  const status = getIntegrationStatus();
 
   if (!analysis) {
     return (
@@ -50,8 +52,11 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
     },
     {
       icon: Network,
-      label: "Lyzr",
-      value: "six agents orchestrated"
+      label: status.agentProvider === "huggingface" ? "Hugging Face" : "Lyzr",
+      value:
+        status.agentProvider === "huggingface"
+          ? `${status.agentModel} powered agent reasoning`
+          : "six agents orchestrated"
     },
     {
       icon: Database,

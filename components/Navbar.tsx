@@ -43,7 +43,7 @@ export function Navbar() {
                 : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
             }`}
           >
-            {status.demoMode ? "Demo Mode" : "Live Mode"}
+            {status.modeLabel}
           </span>
           <Link
             href="/session?judge=1"

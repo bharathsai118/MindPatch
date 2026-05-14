@@ -1,5 +1,5 @@
 import { saveAnalysis } from "@/lib/storage/json-store";
-import { invokeLyzrJson } from "@/lib/agents/lyzr-client";
+import { invokeAgentJson } from "@/lib/agents/agent-client";
 import {
   inferDifficulty,
   inferTopic,
@@ -29,7 +29,7 @@ async function transcriptCleanerAgent(
   input: AnalyzeSessionInput,
   sessionId: string
 ): Promise<TranscriptCleanerOutput> {
-  return invokeLyzrJson({
+  return invokeAgentJson({
     agentName: "Transcript Cleaner Agent",
     sessionId,
     prompt: JSON.stringify({
@@ -49,7 +49,7 @@ async function reasoningTraceAgent(args: {
   cleanedTranscript: string;
   sessionId: string;
 }): Promise<ReasoningTrace> {
-  return invokeLyzrJson({
+  return invokeAgentJson({
     agentName: "Reasoning Trace Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
@@ -69,7 +69,7 @@ async function mistakeClassifierAgent(args: {
   trace: ReasoningTrace;
   sessionId: string;
 }): Promise<MistakeReport> {
-  return invokeLyzrJson({
+  return invokeAgentJson({
     agentName: "Mistake Classifier Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
@@ -131,7 +131,7 @@ async function socraticCoachAgent(args: {
   memoryReplay: MemoryReplay;
   sessionId: string;
 }): Promise<SocraticRepair> {
-  return invokeLyzrJson({
+  return invokeAgentJson({
     agentName: "Socratic Coach Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
@@ -159,7 +159,7 @@ async function trainingPlanAgent(args: {
   topic: string;
   sessionId: string;
 }): Promise<TrainingPlan> {
-  return invokeLyzrJson({
+  return invokeAgentJson({
     agentName: "Training Plan Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
