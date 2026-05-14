@@ -35,7 +35,7 @@ export default async function SessionPage({ searchParams }: SessionPageProps) {
           <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-soft">
             {status.demoMode
               ? "Demo Mode: no live agent key configured"
-              : `${status.modeLabel}: ${status.agentModel}`}
+              : `${status.modeLabel}: ${status.agentModel} + ${status.memoryProvider === "qdrant" ? "Qdrant" : "local memory"} + ${status.embeddingModel}`}
           </div>
         </div>
         <SessionForm

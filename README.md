@@ -74,13 +74,13 @@ Expected cognitive bug:
 
 - **Omi = ambient reasoning capture.** The student explains their approach out loud while solving; MindPatch receives the transcript through `/api/omi/webhook` or the manual/demo input.
 - **Lyzr = autonomous agent orchestration.** MindPatch models the workflow as specialized agents for cleaning, tracing, classifying, retrieving memory, coaching, and planning.
-- **Hugging Face = live model execution.** When `HF_TOKEN` or `HUGGINGFACE_API_KEY` is present, the same agents call a real Hugging Face chat model instead of mock outputs.
-- **Qdrant = long-term cognitive mistake memory.** Mistakes are embedded semantically so the system can replay similar prior failures across DSA topics.
+- **Hugging Face = live model execution + embeddings.** When `HF_TOKEN` or `HUGGINGFACE_API_KEY` is present, the same agents call a real Hugging Face chat model, and mistake memories can be embedded with Hugging Face feature extraction.
+- **Qdrant = long-term cognitive mistake memory.** Mistakes are embedded semantically and stored in Qdrant Cloud so the system can replay similar prior failures across DSA topics.
 
 If credentials are missing, the app still works:
 
 - Missing Lyzr and Hugging Face credentials activate realistic mock agent outputs.
-- Missing Qdrant credentials activate local mock vector memory.
+- Missing Qdrant credentials activate local dynamic vector memory.
 - Missing embedding credentials activate deterministic local embeddings.
 
 This makes the hackathon demo reliable while still showing exactly where live integrations connect.
@@ -147,6 +147,8 @@ HUGGINGFACE_API_KEY=
 HUGGINGFACE_HUB_TOKEN=
 HUGGINGFACE_MODEL=google/gemma-4-31B-it
 HUGGINGFACE_API_BASE=https://router.huggingface.co/v1
+HUGGINGFACE_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+HUGGINGFACE_EMBEDDING_API_BASE=https://router.huggingface.co
 QDRANT_URL=
 QDRANT_API_KEY=
 OPENAI_API_KEY=
@@ -163,6 +165,29 @@ To run MindPatch with a real Hugging Face model:
 5. Restart `npm run dev`.
 
 The app badge will change to **Live HF Model** and arbitrary user transcripts will be analyzed by the Hugging Face model.
+
+### Live Cloud AI + Vector DB Mode
+
+To run the full cloud path:
+
+```bash
+AGENT_PROVIDER=huggingface
+HF_TOKEN=your_hugging_face_token
+HUGGINGFACE_MODEL=google/gemma-4-31B-it
+HUGGINGFACE_API_BASE=https://router.huggingface.co/v1
+HUGGINGFACE_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+HUGGINGFACE_EMBEDDING_API_BASE=https://router.huggingface.co
+QDRANT_URL=https://your-qdrant-cluster-url
+QDRANT_API_KEY=your_qdrant_api_key
+```
+
+With those variables set, the app uses:
+
+- Hugging Face chat completions for the cognitive agents.
+- Hugging Face feature extraction for 384-dimensional semantic embeddings.
+- Qdrant Cloud collection `mindpatch_mistake_memory` for long-term memory search and storage.
+
+The app badge will change to **Live Cloud AI + Vector DB**. Seed memories are upserted into Qdrant automatically, and new mistake sessions are stored in both local JSON and Qdrant Cloud.
 
 The suggested `google/gemma-4-31B-it-assistant` model is an assistant/drafter checkpoint for Gemma speculative decoding. Its model card shows it is usable through Transformers/local apps, but the hosted Inference Providers path is available from the Gemma model page for `google/gemma-4-31B-it`. For a custom deployment, set:
 

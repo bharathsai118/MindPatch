@@ -1,4 +1,9 @@
 import { createHash } from "crypto";
+import {
+  getHuggingFaceEmbeddingBaseUrl,
+  getHuggingFaceEmbeddingModel,
+  getHuggingFaceToken
+} from "@/lib/config";
 
 export const VECTOR_SIZE = 384;
 
@@ -28,9 +33,84 @@ function deterministicEmbedding(text: string): number[] {
   return normalize(vector);
 }
 
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "number");
+}
+
+function meanPool(vectors: number[][]): number[] | null {
+  if (vectors.length === 0) return null;
+  const dimension = vectors[0]?.length ?? 0;
+  if (!dimension || vectors.some((vector) => vector.length !== dimension)) {
+    return null;
+  }
+
+  const pooled = Array.from({ length: dimension }, () => 0);
+  vectors.forEach((vector) => {
+    vector.forEach((value, index) => {
+      pooled[index] += value;
+    });
+  });
+
+  return pooled.map((value) => value / vectors.length);
+}
+
+function extractEmbedding(value: unknown): number[] | null {
+  if (isNumberArray(value)) return value;
+  if (!Array.isArray(value)) return null;
+
+  if (value.length === 1) {
+    return extractEmbedding(value[0]);
+  }
+
+  const vectors = value.filter(isNumberArray);
+  if (vectors.length === value.length) {
+    return meanPool(vectors);
+  }
+
+  const nestedVectors = value
+    .map(extractEmbedding)
+    .filter((item): item is number[] => Boolean(item));
+
+  return meanPool(nestedVectors);
+}
+
+async function huggingFaceEmbedding(text: string): Promise<number[] | null> {
+  const token = getHuggingFaceToken();
+  if (!token) return null;
+
+  const model = getHuggingFaceEmbeddingModel();
+  const baseUrl = getHuggingFaceEmbeddingBaseUrl().replace(/\/$/, "");
+  const endpoint = `${baseUrl}/hf-inference/models/${model}/pipeline/feature-extraction`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: text,
+        normalize: true,
+        truncate: true
+      })
+    });
+
+    if (!response.ok) return null;
+
+    const body = await response.json();
+    const embedding = extractEmbedding(body);
+
+    return embedding?.length === VECTOR_SIZE ? normalize(embedding) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function embedText(text: string): Promise<number[]> {
   if (!process.env.OPENAI_API_KEY) {
-    return deterministicEmbedding(text);
+    const huggingFaceVector = await huggingFaceEmbedding(text);
+    return huggingFaceVector ?? deterministicEmbedding(text);
   }
 
   try {
