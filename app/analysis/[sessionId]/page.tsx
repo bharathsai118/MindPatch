@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BrainCircuit,
+  CheckCircle2,
   Database,
   Mic2,
   Network,
@@ -44,6 +45,7 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
     );
   }
 
+  const bugFound = analysis.mistake_report.mistake_found;
   const pipeline = [
     {
       icon: Mic2,
@@ -61,7 +63,9 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
     {
       icon: Database,
       label: "Qdrant",
-      value: `${analysis.memory_replay.similar_memories.length} memories replayed`
+      value: bugFound
+        ? `${analysis.memory_replay.similar_memories.length} memories replayed`
+        : "no mistake memory needed"
     }
   ];
 
@@ -93,10 +97,10 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
             <div className="grid min-w-52 grid-cols-2 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                  Severity
+                  {bugFound ? "Severity" : "Status"}
                 </p>
                 <p className="mt-1 text-lg font-semibold capitalize text-ink">
-                  {analysis.mistake_report.severity}
+                  {bugFound ? analysis.mistake_report.severity : "Sound"}
                 </p>
               </div>
               <div>
@@ -112,27 +116,50 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="rounded-lg border border-red-100 bg-red-50 p-5 shadow-soft md:p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-red-600 text-white">
-                <ShieldAlert className="h-5 w-5" />
+          {bugFound ? (
+            <section className="rounded-lg border border-red-100 bg-red-50 p-5 shadow-soft md:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-red-600 text-white">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-700">
+                    Debugger verdict
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-red-950">
+                    MindPatch found a cognitive bug in the reasoning.
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-red-900">
+                    {analysis.mistake_report.mistake_summary} The answer is not
+                    handed over; the mental model is repaired through memory
+                    replay, Socratic questioning, and targeted practice.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-700">
-                  Debugger verdict
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-red-950">
-                  The student is solving a different problem than the one asked.
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-red-900">
-                  MindPatch found a constraint-level reasoning bug: the student
-                  optimizes uniqueness by sorting, but a substring must preserve
-                  original order and contiguity. The answer is not handed over;
-                  the mental model is repaired.
-                </p>
+            </section>
+          ) : (
+            <section className="rounded-lg border border-emerald-100 bg-emerald-50 p-5 shadow-soft md:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    Debugger verdict
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-emerald-950">
+                    No Cognitive Bug Detected.
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-emerald-900">
+                    MindPatch found a sound reasoning pattern. This session is
+                    treated as reinforcement: explain the invariant, compare
+                    alternatives, and test the edge cases instead of storing a
+                    fake mistake memory.
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           <section className="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-soft md:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
@@ -165,10 +192,19 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <ReasoningTraceCard trace={analysis.reasoning_trace} />
           <CognitiveBugCard report={analysis.mistake_report} />
-          <MemoryReplayCard replay={analysis.memory_replay} />
-          <SocraticRepairCard repair={analysis.socratic_repair} />
+          <MemoryReplayCard
+            mistakeFound={bugFound}
+            replay={analysis.memory_replay}
+          />
+          <SocraticRepairCard
+            mistakeFound={bugFound}
+            repair={analysis.socratic_repair}
+          />
           <div className="lg:col-span-2">
-            <TrainingPlanCard plan={analysis.training_plan} />
+            <TrainingPlanCard
+              mistakeFound={bugFound}
+              plan={analysis.training_plan}
+            />
           </div>
         </div>
       </section>

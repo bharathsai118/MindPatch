@@ -1,4 +1,5 @@
 export const MISTAKE_TYPES = [
+  "no_cognitive_bug",
   "constraint_misunderstanding",
   "wrong_data_structure",
   "missed_edge_case",
@@ -14,6 +15,7 @@ export const MISTAKE_TYPES = [
 export type MistakeType = (typeof MISTAKE_TYPES)[number];
 
 export const MISTAKE_LABELS: Record<MistakeType, string> = {
+  no_cognitive_bug: "No cognitive bug",
   constraint_misunderstanding: "Constraint misunderstanding",
   wrong_data_structure: "Wrong data structure",
   missed_edge_case: "Missed edge case",

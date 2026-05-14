@@ -14,6 +14,67 @@ function severityClass(severity: MistakeReport["severity"]) {
 export function CognitiveBugCard({ report }: CognitiveBugCardProps) {
   const label = MISTAKE_LABELS[report.mistake_type] ?? report.mistake_type;
 
+  if (!report.mistake_found) {
+    return (
+      <article className="card rounded-lg border-emerald-100 bg-emerald-50/40 p-5 md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+            <h2 className="text-lg font-semibold text-ink">
+              Sound Reasoning Review
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              No Cognitive Bug Detected
+            </span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+              {label}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              Review
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {report.mistake_summary}
+            </p>
+          </section>
+          <section className="rounded-md border border-emerald-100 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              Evidence from transcript
+            </p>
+            <p className="mt-2 text-sm leading-6 text-emerald-950">
+              {report.evidence_from_transcript}
+            </p>
+          </section>
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Why this is sound
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {report.why_it_is_wrong}
+            </p>
+          </section>
+          <section className="rounded-md border border-blue-100 bg-blue-50 p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-blue-700" />
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+                Next reasoning challenge
+              </p>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-blue-950">
+              {report.correct_pattern}
+            </p>
+          </section>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="card rounded-lg p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">

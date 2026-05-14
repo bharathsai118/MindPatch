@@ -4,6 +4,7 @@ import { MemoryPatternBadge } from "@/components/MemoryPatternBadge";
 
 type MemoryReplayCardProps = {
   replay: MemoryReplay;
+  mistakeFound?: boolean;
 };
 
 function formatScore(score?: number) {
@@ -11,7 +12,10 @@ function formatScore(score?: number) {
   return `${Math.round(score * 100)}% match`;
 }
 
-export function MemoryReplayCard({ replay }: MemoryReplayCardProps) {
+export function MemoryReplayCard({
+  replay,
+  mistakeFound = true
+}: MemoryReplayCardProps) {
   return (
     <article className="card rounded-lg p-5 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -24,14 +28,17 @@ export function MemoryReplayCard({ replay }: MemoryReplayCardProps) {
         </span>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        Qdrant-style memory makes the product personal: the current bug is
-        compared against prior reasoning failures, not generic DSA notes.
+        {mistakeFound
+          ? "Qdrant-style memory makes the product personal: the current bug is compared against prior reasoning failures, not generic DSA notes."
+          : "No mistake memory is stored for this session because MindPatch did not find a cognitive bug to replay."}
       </p>
 
       <div className="mt-5 space-y-4">
         {replay.similar_memories.length === 0 ? (
           <p className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            No similar mistake memories were found yet.
+            {mistakeFound
+              ? "No similar mistake memories were found yet."
+              : "Sound submission: memory replay is skipped to avoid creating a false mistake pattern."}
           </p>
         ) : (
           replay.similar_memories.map((memory, index) => (

@@ -14,8 +14,24 @@ import type {
 
 const sentenceSplit = /(?<=[.!?])\s+/;
 
+function isPalindromeHalfReversal(input: AnalyzeSessionInput, transcript: string) {
+  const combined = `${input.problem_name} ${input.problem_text} ${transcript}`.toLowerCase();
+  const normalizedTranscript = transcript.toLowerCase();
+
+  return (
+    combined.includes("palindrome") &&
+    normalizedTranscript.includes("x < 0") &&
+    normalizedTranscript.includes("x % 10 == 0") &&
+    normalizedTranscript.includes("while (x > reversed)") &&
+    normalizedTranscript.includes("reversed = reversed * 10 + x % 10") &&
+    normalizedTranscript.includes("x == reversed") &&
+    normalizedTranscript.includes("reversed / 10")
+  );
+}
+
 export function inferTopic(problemName: string, problemText: string): string {
   const combined = `${problemName} ${problemText}`.toLowerCase();
+  if (combined.includes("palindrome")) return "Math";
   if (combined.includes("substring") || combined.includes("window")) return "Sliding Window";
   if (combined.includes("island") || combined.includes("graph")) return "Graphs";
   if (combined.includes("coin") || combined.includes("minimum")) return "Dynamic Programming";
@@ -26,6 +42,7 @@ export function inferTopic(problemName: string, problemText: string): string {
 
 export function inferDifficulty(problemName: string, problemText: string): string {
   const combined = `${problemName} ${problemText}`.toLowerCase();
+  if (combined.includes("palindrome")) return "easy";
   if (combined.includes("minimum window") || combined.includes("hard")) return "hard";
   if (combined.includes("substring") || combined.includes("island") || combined.includes("coin")) {
     return "medium";
@@ -47,6 +64,22 @@ export function mockTranscriptCleaner(
 
 export function mockReasoningTrace(cleanedTranscript: string): ReasoningTrace {
   const lower = cleanedTranscript.toLowerCase();
+
+  if (
+    lower.includes("ispalindrome") &&
+    lower.includes("while (x > reversed)") &&
+    lower.includes("reversed / 10")
+  ) {
+    return {
+      reasoning_steps: [
+        "Student rejects negative numbers because the minus sign cannot mirror at the end of the integer.",
+        "Student rejects non-zero numbers ending in 0 because reversal would require a leading zero.",
+        "Student reverses only the right half of the integer, reducing overflow risk compared with reversing the whole number.",
+        "Student stops when the original left half is no longer longer than the reversed right half.",
+        "Student handles both even and odd digit counts with x == reversed or x == reversed / 10."
+      ]
+    };
+  }
 
   if (lower.includes("sort") && lower.includes("substring")) {
     return {
@@ -79,6 +112,22 @@ export function mockMistakeClassifier(args: {
   cleanedTranscript: string;
 }): MistakeReport {
   const combined = `${args.input.problem_name} ${args.input.problem_text} ${args.cleanedTranscript}`.toLowerCase();
+
+  if (isPalindromeHalfReversal(args.input, args.cleanedTranscript)) {
+    return {
+      mistake_found: false,
+      mistake_type: "no_cognitive_bug",
+      mistake_summary:
+        "No cognitive bug detected. The code uses the standard numeric half-reversal approach for Palindrome Number.",
+      evidence_from_transcript:
+        "The solution checks x < 0, rejects non-zero trailing-zero values, reverses digits while x > reversed, and compares x == reversed || x == reversed / 10.",
+      why_it_is_wrong:
+        "The reasoning is sound: it preserves numeric constraints, avoids string conversion, and only reverses half of the integer.",
+      correct_pattern:
+        "Keep this pattern: handle invalid signs/trailing zeros first, reverse the right half numerically, then compare halves while dropping the middle digit for odd-length numbers.",
+      severity: "low"
+    };
+  }
 
   if (combined.includes("substring") && combined.includes("sort")) {
     return {
@@ -174,6 +223,19 @@ export function mockSocraticCoach(args: {
   mistake: MistakeReport;
   memoryReplay: MemoryReplay;
 }): SocraticRepair {
+  if (!args.mistake.mistake_found) {
+    return {
+      socratic_question:
+        "Which invariant proves that reversed always contains the digits from the right half of the original number?",
+      hint:
+        "Track x and reversed on 1221 and 12321. Notice what each variable represents when the loop stops.",
+      correction:
+        "The approach is correct. The next growth step is explaining why negatives, trailing zeros, even digit counts, and odd digit counts are all covered.",
+      mini_rule:
+        "When your solution is sound, turn it into a reusable proof: invalid cases, loop invariant, stop condition, and final comparison."
+    };
+  }
+
   if (args.mistake.mistake_type === "constraint_misunderstanding") {
     const isTwoPointerPrecondition =
       args.mistake.mistake_summary.toLowerCase().includes("two pointer") ||
@@ -222,6 +284,40 @@ export function mockTrainingPlan(args: {
   mistake: MistakeReport;
   topic: string;
 }): TrainingPlan {
+  if (!args.mistake.mistake_found) {
+    return {
+      weakness_pattern:
+        "No active weakness detected in this submission; reinforce the proof habit behind the numeric half-reversal pattern.",
+      practice_tasks: [
+        {
+          problem_name: "Palindrome Number",
+          topic: "Math",
+          goal: "Explain the half-reversal invariant without relying on string conversion.",
+          why_this_problem:
+            "It converts accepted code into a defensible reasoning pattern."
+        },
+        {
+          problem_name: "Reverse Integer",
+          topic: "Math",
+          goal: "Compare full reversal with overflow-aware numeric manipulation.",
+          why_this_problem:
+            "It sharpens the difference between reversing all digits and safely reversing only what is needed."
+        },
+        {
+          problem_name: "Valid Palindrome",
+          topic: "Two Pointers",
+          goal: "Contrast numeric palindrome reasoning with string boundary reasoning.",
+          why_this_problem:
+            "It builds transfer between palindrome variants without confusing their constraints."
+        }
+      ],
+      micro_drill:
+        "Walk through -121, 10, 0, 1221, and 12321. For each, write the exact branch or comparison that decides the result.",
+      daily_reflection:
+        "Can I explain the loop invariant and stop condition clearly enough that another student would trust the code before running it?"
+    };
+  }
+
   if (args.mistake.mistake_type === "constraint_misunderstanding") {
     const isTwoPointerPrecondition =
       args.mistake.mistake_summary.toLowerCase().includes("two pointer") ||

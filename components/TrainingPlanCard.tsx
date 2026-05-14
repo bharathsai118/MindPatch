@@ -3,9 +3,13 @@ import type { TrainingPlan } from "@/lib/types";
 
 type TrainingPlanCardProps = {
   plan: TrainingPlan;
+  mistakeFound?: boolean;
 };
 
-export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
+export function TrainingPlanCard({
+  plan,
+  mistakeFound = true
+}: TrainingPlanCardProps) {
   return (
     <article className="card rounded-lg p-5 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -16,12 +20,12 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
           </h2>
         </div>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-          Personalized
+          {mistakeFound ? "Personalized" : "Reinforcement"}
         </span>
       </div>
       <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Weakness pattern
+          {mistakeFound ? "Weakness pattern" : "Reinforcement focus"}
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-700">
           {plan.weakness_pattern}

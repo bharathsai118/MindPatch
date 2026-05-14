@@ -25,6 +25,28 @@ import type {
   TranscriptCleanerOutput
 } from "@/lib/types";
 
+function normalizeMistakeReport(report: MistakeReport): MistakeReport {
+  if (report.mistake_found) return report;
+
+  return {
+    mistake_found: false,
+    mistake_type: "no_cognitive_bug",
+    mistake_summary:
+      report.mistake_summary ||
+      "No cognitive bug detected. The submitted reasoning appears sound.",
+    evidence_from_transcript:
+      report.evidence_from_transcript ||
+      "MindPatch did not find transcript evidence of a reasoning failure.",
+    why_it_is_wrong:
+      report.why_it_is_wrong ||
+      "The reasoning preserves the relevant constraints and handles the expected edge cases.",
+    correct_pattern:
+      report.correct_pattern ||
+      "Reinforce the solution by explaining the invariant, stop condition, and edge-case coverage.",
+    severity: "low"
+  };
+}
+
 async function transcriptCleanerAgent(
   input: AnalyzeSessionInput,
   sessionId: string
@@ -73,7 +95,8 @@ async function mistakeClassifierAgent(args: {
     agentName: "Mistake Classifier Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
-      task: "Classify the hidden reasoning mistake in DSA reasoning.",
+      task:
+        "Detect whether the DSA reasoning contains a hidden cognitive mistake. If the reasoning or code is sound, return mistake_found false and provide a concise soundness review instead of inventing a bug.",
       problem: {
         name: args.input.problem_name,
         text: args.input.problem_text
@@ -81,6 +104,7 @@ async function mistakeClassifierAgent(args: {
       reasoning_steps: args.trace.reasoning_steps,
       cleaned_transcript: args.cleanedTranscript,
       allowed_mistake_categories: [
+        "no_cognitive_bug",
         "constraint_misunderstanding",
         "wrong_data_structure",
         "missed_edge_case",
@@ -93,13 +117,18 @@ async function mistakeClassifierAgent(args: {
         "graph_traversal_confusion"
       ],
       output_schema: {
-        mistake_found: true,
-        mistake_type: "constraint_misunderstanding",
-        mistake_summary: "string",
-        evidence_from_transcript: "string",
-        why_it_is_wrong: "string",
-        correct_pattern: "string",
-        severity: "high"
+        mistake_found: "boolean",
+        mistake_type:
+          "one allowed category. Use no_cognitive_bug when mistake_found is false.",
+        mistake_summary:
+          "bug summary, or soundness summary when no bug is found",
+        evidence_from_transcript:
+          "specific transcript/code evidence supporting the verdict",
+        why_it_is_wrong:
+          "why the mental model breaks, or why the reasoning is sound when no bug is found",
+        correct_pattern:
+          "correct repair pattern, or validated pattern when no bug is found",
+        severity: "low | medium | high. Use low when mistake_found is false."
       }
     }),
     fallback: () =>
@@ -135,7 +164,8 @@ async function socraticCoachAgent(args: {
     agentName: "Socratic Coach Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
-      task: "Generate a Socratic repair response for the current cognitive bug.",
+      task:
+        "Generate a Socratic repair response for a cognitive bug. If mistake_found is false, generate a sound-reasoning review question that reinforces the proof habit rather than correcting the student.",
       current_mistake: args.mistake,
       similar_memories: args.memoryReplay.similar_memories,
       output_schema: {
@@ -163,7 +193,8 @@ async function trainingPlanAgent(args: {
     agentName: "Training Plan Agent",
     sessionId: args.sessionId,
     prompt: JSON.stringify({
-      task: "Create a personalized DSA training plan based on current mistake and memory.",
+      task:
+        "Create a personalized DSA training plan based on current mistake and memory. If mistake_found is false, create a reinforcement plan that helps the student explain the invariant, compare alternatives, and test edge cases.",
       current_mistake: args.mistake,
       similar_memories: args.memoryReplay.similar_memories,
       topic: args.topic,
@@ -204,17 +235,19 @@ export async function analyzeReasoningSession(
     cleanedTranscript: cleaner.cleaned_transcript,
     sessionId
   });
-  const mistake = await mistakeClassifierAgent({
+  const mistake = normalizeMistakeReport(await mistakeClassifierAgent({
     input,
     cleanedTranscript: cleaner.cleaned_transcript,
     trace,
     sessionId
-  });
-  const memoryReplay = await memoryRetrievalAgent({
-    problemName: input.problem_name,
-    topic,
-    mistake
-  });
+  }));
+  const memoryReplay = mistake.mistake_found
+    ? await memoryRetrievalAgent({
+        problemName: input.problem_name,
+        topic,
+        mistake
+      })
+    : { similar_memories: [] };
   const socraticRepair = await socraticCoachAgent({
     mistake,
     memoryReplay,
