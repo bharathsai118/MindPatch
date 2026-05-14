@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, BrainCircuit, PlayCircle, Send } from "lucide-react";
+import { AlertCircle, BrainCircuit, PlayCircle, Send, Trophy } from "lucide-react";
 import { LoadingState } from "@/components/LoadingState";
 import { WorkflowTimeline, type WorkflowStep } from "@/components/WorkflowTimeline";
 import {
@@ -14,22 +14,63 @@ import type { AnalysisResult } from "@/lib/types";
 
 type SessionFormProps = {
   initialDemo?: boolean;
+  judgeDemo?: boolean;
 };
 
-const workflowLabels = [
-  "Transcript received",
-  "Agents analyzing reasoning",
-  "Searching memory",
-  "Detecting cognitive bug",
-  "Creating training plan"
+const workflowStages = [
+  {
+    label: "Transcript received",
+    agent: "Omi Intake Adapter",
+    description:
+      "Captures the spoken reasoning transcript and normalizes it into a clean session payload.",
+    artifact: "raw speech -> structured transcript"
+  },
+  {
+    label: "Cleaner agent extracts intent",
+    agent: "Transcript Cleaner Agent",
+    description:
+      "Identifies the student's intended algorithm, problem framing, and unstated assumptions.",
+    artifact: "cleaned transcript + student intent"
+  },
+  {
+    label: "Reasoning trace built",
+    agent: "Reasoning Trace Agent",
+    description:
+      "Breaks the explanation into ordered mental steps so the bug can be localized.",
+    artifact: "step-by-step cognitive trace"
+  },
+  {
+    label: "Memory search running",
+    agent: "Qdrant Memory Retrieval Agent",
+    description:
+      "Retrieves similar past mistakes from long-term vector memory and ranks them by pattern match.",
+    artifact: "similar mistake memories"
+  },
+  {
+    label: "Cognitive bug classified",
+    agent: "Mistake Classifier Agent",
+    description:
+      "Detects the hidden reasoning failure, severity, transcript evidence, and correct pattern.",
+    artifact: "cognitive bug report"
+  },
+  {
+    label: "Repair plan generated",
+    agent: "Socratic Coach + Training Plan Agents",
+    description:
+      "Produces the judge-facing Socratic repair question and personalized DSA training plan.",
+    artifact: "repair prompt + autonomous training plan"
+  }
 ];
 
-const emptySteps: WorkflowStep[] = workflowLabels.map((label) => ({
-  label,
+const emptySteps: WorkflowStep[] = workflowStages.map((stage) => ({
+  ...stage,
   status: "pending"
 }));
 
-export function SessionForm({ initialDemo = false }: SessionFormProps) {
+export function SessionForm({
+  initialDemo = false,
+  judgeDemo = false
+}: SessionFormProps) {
   const router = useRouter();
   const [problemName, setProblemName] = useState("");
   const [problemText, setProblemText] = useState("");
@@ -37,26 +78,44 @@ export function SessionForm({ initialDemo = false }: SessionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [error, setError] = useState("");
+  const judgeRunStarted = useRef(false);
 
   useEffect(() => {
-    if (initialDemo) {
+    if (initialDemo || judgeDemo) {
       setProblemName(DEMO_PROBLEM_NAME);
       setProblemText(DEMO_PROBLEM_TEXT);
       setTranscript(DEMO_TRANSCRIPT);
     }
-  }, [initialDemo]);
+  }, [initialDemo, judgeDemo]);
+
+  useEffect(() => {
+    if (!judgeDemo) return;
+    if (judgeRunStarted.current) return;
+    judgeRunStarted.current = true;
+    const timeout = window.setTimeout(() => {
+      const payload = {
+        problem_name: DEMO_PROBLEM_NAME,
+        problem_text: DEMO_PROBLEM_TEXT,
+        transcript: DEMO_TRANSCRIPT
+      };
+      void runAnalysis(payload);
+    }, 700);
+    return () => window.clearTimeout(timeout);
+    // runAnalysis intentionally stays outside deps so Judge Demo fires once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [judgeDemo]);
 
   useEffect(() => {
     if (!isLoading) return;
     const interval = window.setInterval(() => {
-      setActiveStep((step) => Math.min(step + 1, workflowLabels.length - 1));
-    }, 650);
+      setActiveStep((step) => Math.min(step + 1, workflowStages.length - 1));
+    }, 720);
     return () => window.clearInterval(interval);
   }, [isLoading]);
 
   const steps = useMemo<WorkflowStep[]>(() => {
-    return workflowLabels.map((label, index) => ({
-      label,
+    return workflowStages.map((stage, index) => ({
+      ...stage,
       status:
         index < activeStep ? "complete" : index === activeStep ? "active" : "pending"
     }));
@@ -99,7 +158,7 @@ export function SessionForm({ initialDemo = false }: SessionFormProps) {
         throw new Error(body?.error ?? "Analysis failed");
       }
 
-      setActiveStep(workflowLabels.length);
+      setActiveStep(workflowStages.length);
       const analysis = (await response.json()) as AnalysisResult;
       router.push(`/analysis/${analysis.session_id}`);
     } catch (caught) {
@@ -140,6 +199,22 @@ export function SessionForm({ initialDemo = false }: SessionFormProps) {
           <BrainCircuit className="h-5 w-5 text-signal" />
           <h2 className="text-lg font-semibold text-ink">DSA Reasoning Input</h2>
         </div>
+        {judgeDemo ? (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-3">
+              <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <div>
+                <p className="font-semibold text-amber-950">
+                  Judge Demo Mode is running
+                </p>
+                <p className="mt-1 text-sm leading-6 text-amber-900">
+                  MindPatch is replaying the full hackathon demo from transcript
+                  intake to memory retrieval and final training plan.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <label className="mt-5 block">
           <span className="text-sm font-semibold text-slate-700">Problem title</span>
@@ -199,6 +274,17 @@ export function SessionForm({ initialDemo = false }: SessionFormProps) {
           >
             <PlayCircle className="h-4 w-4" />
             Run Demo Transcript
+          </button>
+          <button
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            disabled={isLoading}
+            onClick={() => {
+              window.location.href = "/session?judge=1";
+            }}
+            type="button"
+          >
+            <Trophy className="h-4 w-4" />
+            Judge Demo Mode
           </button>
           <button
             className="inline-flex items-center justify-center rounded-md px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"

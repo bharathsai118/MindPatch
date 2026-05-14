@@ -63,6 +63,10 @@ export type SimilarMemory = {
   pattern: string;
   date: string;
   similarity_reason: string;
+  similarity_score?: number;
+  prior_repair?: string;
+  lesson?: string;
+  confidence_signal?: string;
 };
 
 export type MemoryReplay = {
@@ -126,6 +130,12 @@ export type MistakeMemory = {
 
 export type ProgressData = {
   cognitive_progress_score: number;
+  score_breakdown: Array<{
+    label: string;
+    value: number;
+    signal: string;
+  }>;
+  progress_summary: string;
   top_mistake_types: Array<{
     mistake_type: string;
     count: number;

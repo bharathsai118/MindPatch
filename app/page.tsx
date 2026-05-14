@@ -1,4 +1,11 @@
-import { ArrowRight, BrainCircuit, Database, Mic2, Route } from "lucide-react";
+import {
+  ArrowRight,
+  BrainCircuit,
+  Database,
+  Mic2,
+  Route,
+  Trophy
+} from "lucide-react";
 import Link from "next/link";
 import { HeroSection } from "@/components/HeroSection";
 
@@ -48,10 +55,11 @@ export default function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/memory"
-                className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400"
+                href="/session?judge=1"
+                className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:-translate-y-0.5 hover:bg-amber-100"
               >
-                View Mistake Memory
+                <Trophy className="h-4 w-4" />
+                Judge Demo Mode
               </Link>
             </div>
           </div>
@@ -109,7 +117,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-blue-200">
                 <Route className="h-4 w-4" />
-                Omi → MindPatch Backend → Lyzr Agents → Qdrant Memory → Dashboard
+                Omi - MindPatch Backend - Lyzr Agents - Qdrant Memory - Dashboard
               </div>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">
                 Run the complete demo with no external credentials.
@@ -121,10 +129,10 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/session?demo=1"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100"
+              href="/session?judge=1"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-amber-200"
             >
-              Run Demo
+              Judge Demo Mode
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

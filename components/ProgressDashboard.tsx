@@ -28,9 +28,32 @@ export function ProgressDashboard({ progress }: ProgressDashboardProps) {
           />
         </div>
         <p className="mt-4 text-sm leading-6 text-slate-600">
-          Score reflects memory diversity, repeated mistake frequency, and
-          whether recent sessions show fewer severe cognitive bugs.
+          {progress.progress_summary}
         </p>
+        <div className="mt-5 grid gap-3">
+          {progress.score_breakdown.map((item) => (
+            <div
+              className="rounded-md border border-slate-200 bg-slate-50 p-3"
+              key={item.label}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-ink">{item.label}</p>
+                <span className="text-sm font-semibold text-blue-700">
+                  {item.value}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-slate-200">
+                <div
+                  className="h-1.5 rounded-full bg-blue-600"
+                  style={{ width: `${item.value}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {item.signal}
+              </p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card rounded-lg p-6">
@@ -83,7 +106,7 @@ export function ProgressDashboard({ progress }: ProgressDashboardProps) {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">
-                  {session.mistake_type.replace(/_/g, " ")} · {session.severity}
+                  {session.mistake_type.replace(/_/g, " ")} - {session.severity}
                 </p>
               </div>
             ))

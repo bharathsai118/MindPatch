@@ -18,6 +18,11 @@ function defaultDb(): MindPatchDb {
   };
 }
 
+function mergeSeedMemories(memories: MistakeMemory[]): MistakeMemory[] {
+  const userMemories = memories.filter((memory) => !memory.id.startsWith("seed-"));
+  return [...SEED_MEMORIES, ...userMemories];
+}
+
 async function ensureDb(): Promise<void> {
   await mkdir(DATA_DIR, { recursive: true });
   try {
@@ -33,7 +38,7 @@ async function readDb(): Promise<MindPatchDb> {
   const parsed = JSON.parse(raw) as Partial<MindPatchDb>;
   return {
     analyses: parsed.analyses ?? [],
-    memories: parsed.memories ?? SEED_MEMORIES
+    memories: mergeSeedMemories(parsed.memories ?? SEED_MEMORIES)
   };
 }
 

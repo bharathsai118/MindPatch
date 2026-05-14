@@ -39,7 +39,8 @@ export function mockTranscriptCleaner(
   const cleaned = input.transcript.replace(/\s+/g, " ").trim();
   return {
     cleaned_transcript: cleaned,
-    student_intent: `Solve ${input.problem_name} using the approach described in the spoken reasoning.`,
+    student_intent:
+      `The student is trying to solve ${input.problem_name} by transforming the input first, then inferring uniqueness from the transformed string.`,
     problem_detected: input.problem_name || DEMO_PROBLEM_NAME
   };
 }
@@ -50,10 +51,11 @@ export function mockReasoningTrace(cleanedTranscript: string): ReasoningTrace {
   if (lower.includes("sort") && lower.includes("substring")) {
     return {
       reasoning_steps: [
-        "Student identifies the task as finding a longest substring without repeated characters.",
-        "Student proposes sorting the string before reasoning about uniqueness.",
-        "Student plans to remove adjacent duplicate characters after sorting.",
-        "Student assumes the resulting unique characters represent the longest valid substring."
+        "Student correctly recognizes that the goal involves a substring with no repeated characters.",
+        "Student silently reframes the problem as a uniqueness cleanup task rather than a contiguous-window task.",
+        "Student proposes sorting the string, which changes the original character positions before any invariant is protected.",
+        "Student removes adjacent duplicates from the sorted copy and treats the remaining characters as a candidate answer.",
+        "Hidden bug: the reasoning optimizes uniqueness while destroying the substring constraint the answer must preserve."
       ]
     };
   }
@@ -83,13 +85,13 @@ export function mockMistakeClassifier(args: {
       mistake_found: true,
       mistake_type: "constraint_misunderstanding",
       mistake_summary:
-        "Sorting destroys the original contiguous substring order, so the proposed approach solves a different problem.",
+        "Sorting destroys the original contiguous substring order, so the proposed approach solves a different problem: unique characters in a reordered string.",
       evidence_from_transcript:
         "I think I can sort the string first and then remove duplicate adjacent characters.",
       why_it_is_wrong:
-        "A substring must preserve the original order and contiguity of characters. Sorting changes both, so the result cannot prove the longest valid substring.",
+        "A substring is a contiguous slice of the original string. Sorting changes adjacency and order, so it can manufacture a set of unique characters that never appeared together as one substring.",
       correct_pattern:
-        "Use a sliding window with a seen-character index/map, expanding right and moving left past duplicates while preserving original order.",
+        "Use a sliding window over the original string. Expand the right pointer, track last-seen positions, and move the left pointer only when a duplicate enters the current window.",
       severity: "high"
     };
   }
@@ -177,11 +179,11 @@ export function mockSocraticCoach(args: {
       socratic_question:
         "What does the word substring require that sorting destroys?",
       hint:
-        "Compare a substring with a subsequence and with a sorted copy. Which one keeps positions adjacent in the original string?",
+        "Write the indices of a sorted copy next to the original string. Do the kept characters still occupy one continuous range?",
       correction:
-        "Do not transform the string before preserving the invariant. Track a moving window over the original order and shrink it when a duplicate appears.",
+        "Do not transform the string before protecting the invariant. Keep a moving window over original indices, shrink past duplicates, and update the best length only from valid windows.",
       mini_rule:
-        "Before applying an algorithm, name the precondition it needs and the invariant it must preserve."
+        "Before applying a pattern, name the constraint it must preserve and the transformation it is not allowed to perform."
     };
   }
 
@@ -190,7 +192,7 @@ export function mockSocraticCoach(args: {
     socratic_question:
       "Which exact constraint would become false if you applied your chosen pattern blindly?",
     hint: related
-      ? `Recall the similar mistake from ${related}: the fix started by checking the pattern's preconditions.`
+      ? `Recall the similar mistake from ${related}: the repair started by checking the pattern's preconditions before coding.`
       : "Write one sentence that must remain true after every algorithm step.",
     correction:
       "Slow down before implementation: identify the invariant, test it on a small counterexample, then pick the pattern.",
@@ -206,21 +208,21 @@ export function mockTrainingPlan(args: {
   if (args.mistake.mistake_type === "constraint_misunderstanding") {
     return {
       weakness_pattern:
-        "Applying a familiar algorithm before checking the problem's ordering and contiguity preconditions.",
+        "Applying a familiar transformation before checking whether it preserves ordering, contiguity, and algorithm preconditions.",
       practice_tasks: [
         {
           problem_name: "Longest Substring Without Repeating Characters",
           topic: "Sliding Window",
           goal: "Maintain a window invariant over original string order.",
           why_this_problem:
-            "It directly repairs the sorting mistake by forcing contiguity-aware reasoning."
+            "It directly repairs the sorting mistake by forcing the answer to come from original contiguous indices."
         },
         {
           problem_name: "Permutation in String",
           topic: "Sliding Window",
           goal: "Separate substring window constraints from character multiset matching.",
           why_this_problem:
-            "It trains the difference between order-sensitive windows and frequency comparisons."
+            "It trains the difference between order-sensitive windows and frequency-only matching."
         },
         {
           problem_name: "Minimum Window Substring",
@@ -231,9 +233,9 @@ export function mockTrainingPlan(args: {
         }
       ],
       micro_drill:
-        "For five problems, write the words contiguous, sorted, subsequence, and original order, then mark which ones the algorithm is allowed to change.",
+        "For five string problems, write: contiguous, original order, frequency, and sorted. Mark which properties the algorithm may change before choosing a pattern.",
       daily_reflection:
-        "Before coding, ask: what property would my first transformation destroy?"
+        "Before coding, ask: what property would my first transformation destroy, and is that property part of the output definition?"
     };
   }
 

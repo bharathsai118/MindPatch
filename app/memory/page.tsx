@@ -1,4 +1,4 @@
-import { Brain, Clock3, Database, Repeat2 } from "lucide-react";
+import { Clock3, Database, Repeat2, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { MemoryPatternBadge } from "@/components/MemoryPatternBadge";
 import { getMemories } from "@/lib/storage/json-store";
@@ -62,6 +62,10 @@ export default async function MemoryPage() {
                   You often apply an algorithm before checking its
                   preconditions.
                 </div>
+                <div className="mt-3 rounded-md border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
+                  Judge signal: each replay includes the spoken evidence, the
+                  faulty mental pattern, and the repaired invariant.
+                </div>
               </div>
             </aside>
 
@@ -109,6 +113,13 @@ export default async function MemoryPage() {
                           {memory.correct_pattern}
                         </p>
                       </div>
+                    </div>
+                    <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                      <ShieldCheck className="mt-1 h-4 w-4 shrink-0 text-amber-700" />
+                      <span>
+                        <strong>Confidence signal:</strong>{" "}
+                        {memory.confidence_signal}
+                      </span>
                     </div>
                   </article>
                 ))}

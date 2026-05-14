@@ -4,12 +4,14 @@ import { getIntegrationStatus } from "@/lib/config";
 type SessionPageProps = {
   searchParams?: Promise<{
     demo?: string;
+    judge?: string;
   }>;
 };
 
 export default async function SessionPage({ searchParams }: SessionPageProps) {
   const params = (await searchParams) ?? {};
   const status = getIntegrationStatus();
+  const isJudgeDemo = params.judge === "1";
 
   return (
     <main className="dashboard-grid min-h-screen px-5 py-8 sm:px-8">
@@ -20,11 +22,14 @@ export default async function SessionPage({ searchParams }: SessionPageProps) {
               Reasoning session
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-              Speak your thinking. MindPatch debugs the pattern.
+              {isJudgeDemo
+                ? "Judge Demo Mode: watch MindPatch debug a hidden DSA mistake."
+                : "Speak your thinking. MindPatch debugs the pattern."}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Paste a transcript, use the demo transcript, or post to the Omi
-              webhook. The same autonomous workflow produces the analysis.
+              {isJudgeDemo
+                ? "The demo auto-runs a flawed Longest Substring transcript through transcript cleaning, reasoning trace, memory replay, Socratic repair, and a final training plan."
+                : "Paste a transcript, use the demo transcript, or post to the Omi webhook. The same autonomous workflow produces the analysis."}
             </p>
           </div>
           <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-soft">
@@ -33,7 +38,10 @@ export default async function SessionPage({ searchParams }: SessionPageProps) {
               : "Live integrations configured"}
           </div>
         </div>
-        <SessionForm initialDemo={params.demo === "1"} />
+        <SessionForm
+          initialDemo={params.demo === "1"}
+          judgeDemo={isJudgeDemo}
+        />
       </section>
     </main>
   );

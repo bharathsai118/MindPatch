@@ -43,23 +43,30 @@ export class QdrantMemoryAdapter implements VectorMemoryAdapter {
     const vector = await embedText(input.semanticText);
     const results = await this.client.search(COLLECTION_NAME, {
       vector,
-      limit: input.limit ?? 3,
+      limit: Math.max(input.limit ?? 3, 24),
       with_payload: true
     });
 
-    return results.map((result) => {
-      const payload = result.payload as MemoryPayload;
-      return {
-        problem_name: payload.problem_name,
-        mistake_type: payload.mistake_type,
-        pattern: payload.mistake_summary,
-        date: payload.created_at,
-        similarity_reason:
-          payload.mistake_type === input.mistakeType
-            ? "Qdrant returned this as a close vector match with the same mistake category."
-            : "Qdrant returned this as a semantically close prior reasoning failure."
-      };
-    });
+    return results
+      .map((result) => {
+        const payload = result.payload as MemoryPayload;
+        return {
+          problem_name: payload.problem_name,
+          mistake_type: payload.mistake_type,
+          pattern: payload.mistake_summary,
+          date: payload.created_at,
+          similarity_score: Number(result.score.toFixed(2)),
+          similarity_reason:
+            payload.mistake_type === input.mistakeType
+              ? "Qdrant returned this as a close vector match with the same mistake category."
+              : "Qdrant returned this as a semantically close prior reasoning failure.",
+          prior_repair: payload.socratic_question,
+          lesson: payload.correct_pattern,
+          confidence_signal: payload.confidence_signal
+        };
+      })
+      .filter((memory) => memory.problem_name !== input.excludeProblemName)
+      .slice(0, input.limit ?? 3);
   }
 
   async storeMemory(memory: MistakeMemory): Promise<void> {

@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, PlayCircle } from "lucide-react";
+import { ArrowRight, Bot, PlayCircle, Trophy } from "lucide-react";
 import Link from "next/link";
 import { HeroSignalScene } from "@/components/HeroSignalScene";
 
@@ -28,6 +28,13 @@ export function HeroSection() {
             >
               Start Reasoning Session
               <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/session?judge=1"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-amber-200"
+            >
+              <Trophy className="h-4 w-4" />
+              Judge Demo Mode
             </Link>
             <Link
               href="/session?demo=1"

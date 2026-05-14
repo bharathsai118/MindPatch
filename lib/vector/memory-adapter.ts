@@ -3,6 +3,7 @@ import type { MistakeMemory, SimilarMemory } from "@/lib/types";
 export type MemorySearchInput = {
   semanticText: string;
   mistakeType?: string;
+  excludeProblemName?: string;
   limit?: number;
 };
 

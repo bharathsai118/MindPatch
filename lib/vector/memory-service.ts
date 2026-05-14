@@ -43,27 +43,54 @@ export async function retrieveSimilarMistakes(
     const similar_memories = await getAdapter().searchMemories({
       semanticText,
       mistakeType: currentMemoryLike.mistake_type,
-      limit: 3
+      excludeProblemName: currentMemoryLike.problem_name,
+      limit: 8
     });
 
+    const pastProblemMemories = similar_memories.filter(
+      (memory) => memory.problem_name !== currentMemoryLike.problem_name
+    );
+
+    if (pastProblemMemories.length > 0) {
+      return { similar_memories: pastProblemMemories.slice(0, 3) };
+    }
+
     if (similar_memories.length > 0) {
-      return { similar_memories };
+      return { similar_memories: similar_memories.slice(0, 3) };
     }
   } catch {
     const similar_memories = await fallbackAdapter.searchMemories({
       semanticText,
       mistakeType: currentMemoryLike.mistake_type,
-      limit: 3
+      excludeProblemName: currentMemoryLike.problem_name,
+      limit: 8
     });
-    return { similar_memories };
+    const pastProblemMemories = similar_memories.filter(
+      (memory) => memory.problem_name !== currentMemoryLike.problem_name
+    );
+    return {
+      similar_memories:
+        pastProblemMemories.length > 0
+          ? pastProblemMemories.slice(0, 3)
+          : similar_memories.slice(0, 3)
+    };
   }
 
   const similar_memories = await fallbackAdapter.searchMemories({
     semanticText,
     mistakeType: currentMemoryLike.mistake_type,
-    limit: 3
+    excludeProblemName: currentMemoryLike.problem_name,
+    limit: 8
   });
-  return { similar_memories };
+  const pastProblemMemories = similar_memories.filter(
+    (memory) => memory.problem_name !== currentMemoryLike.problem_name
+  );
+  return {
+    similar_memories:
+      pastProblemMemories.length > 0
+        ? pastProblemMemories.slice(0, 3)
+        : similar_memories.slice(0, 3)
+  };
 }
 
 export async function storeMistakeMemory(memory: MistakeMemory): Promise<void> {
