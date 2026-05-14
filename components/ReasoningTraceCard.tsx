@@ -12,6 +12,10 @@ export function ReasoningTraceCard({ trace }: ReasoningTraceCardProps) {
         <Route className="h-5 w-5 text-signal" />
         <h2 className="text-lg font-semibold text-ink">Reasoning Trace</h2>
       </div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        The transcript is converted into inspectable mental steps so the hidden
+        bug can be localized before any answer is given.
+      </p>
       <ol className="mt-5 space-y-3">
         {trace.reasoning_steps.map((step, index) => (
           <li className="flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" key={step}>

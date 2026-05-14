@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, BrainCircuit } from "lucide-react";
+import {
+  ArrowLeft,
+  BrainCircuit,
+  Database,
+  Mic2,
+  Network,
+  ShieldAlert
+} from "lucide-react";
 import { CognitiveBugCard } from "@/components/CognitiveBugCard";
 import { EmptyState } from "@/components/EmptyState";
 import { MemoryReplayCard } from "@/components/MemoryReplayCard";
@@ -34,6 +41,24 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
       </main>
     );
   }
+
+  const pipeline = [
+    {
+      icon: Mic2,
+      label: "Omi",
+      value: "ambient transcript captured"
+    },
+    {
+      icon: Network,
+      label: "Lyzr",
+      value: "six agents orchestrated"
+    },
+    {
+      icon: Database,
+      label: "Qdrant",
+      value: `${analysis.memory_replay.similar_memories.length} memories replayed`
+    }
+  ];
 
   return (
     <main className="dashboard-grid min-h-screen px-5 py-8 sm:px-8">
@@ -79,6 +104,57 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="rounded-lg border border-red-100 bg-red-50 p-5 shadow-soft md:p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-red-600 text-white">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-700">
+                  Debugger verdict
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-red-950">
+                  The student is solving a different problem than the one asked.
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-red-900">
+                  MindPatch found a constraint-level reasoning bug: the student
+                  optimizes uniqueness by sorting, but a substring must preserve
+                  original order and contiguity. The answer is not handed over;
+                  the mental model is repaired.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-soft md:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+              Ecosystem trace
+            </p>
+            <div className="mt-4 space-y-3">
+              {pipeline.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    className="flex items-center gap-3 rounded-md border border-white/10 bg-white/8 p-3"
+                    key={item.label}
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-slate-950">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{item.label}</p>
+                      <p className="text-xs leading-5 text-slate-300">
+                        {item.value}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

@@ -22,42 +22,42 @@ const workflowStages = [
     label: "Transcript received",
     agent: "Omi Intake Adapter",
     description:
-      "Captures the spoken reasoning transcript and normalizes it into a clean session payload.",
+      "Simulates ambient reasoning capture: spoken DSA explanation enters MindPatch without becoming an answer request.",
     artifact: "raw speech -> structured transcript"
   },
   {
     label: "Cleaner agent extracts intent",
     agent: "Transcript Cleaner Agent",
     description:
-      "Identifies the student's intended algorithm, problem framing, and unstated assumptions.",
+      "Finds the student's actual mental move: sorting first, then treating uniqueness as if it preserved substring constraints.",
     artifact: "cleaned transcript + student intent"
   },
   {
     label: "Reasoning trace built",
     agent: "Reasoning Trace Agent",
     description:
-      "Breaks the explanation into ordered mental steps so the bug can be localized.",
+      "Turns the monologue into debuggable steps so the exact faulty transition can be isolated.",
     artifact: "step-by-step cognitive trace"
   },
   {
     label: "Memory search running",
     agent: "Qdrant Memory Retrieval Agent",
     description:
-      "Retrieves similar past mistakes from long-term vector memory and ranks them by pattern match.",
+      "Searches long-term cognitive mistake memory for prior cases where a familiar algorithm was applied before checking preconditions.",
     artifact: "similar mistake memories"
   },
   {
     label: "Cognitive bug classified",
     agent: "Mistake Classifier Agent",
     description:
-      "Detects the hidden reasoning failure, severity, transcript evidence, and correct pattern.",
+      "Names the hidden bug: sorting destroys the original contiguous substring invariant.",
     artifact: "cognitive bug report"
   },
   {
     label: "Repair plan generated",
     agent: "Socratic Coach + Training Plan Agents",
     description:
-      "Produces the judge-facing Socratic repair question and personalized DSA training plan.",
+      "Generates the repair question and practice sequence without dumping the final code answer.",
     artifact: "repair prompt + autonomous training plan"
   }
 ];
@@ -208,8 +208,8 @@ export function SessionForm({
                   Judge Demo Mode is running
                 </p>
                 <p className="mt-1 text-sm leading-6 text-amber-900">
-                  MindPatch is replaying the full hackathon demo from transcript
-                  intake to memory retrieval and final training plan.
+                  Watch Omi-style capture feed Lyzr-style agents, which query
+                  Qdrant-style memory before producing a repair plan.
                 </p>
               </div>
             </div>
@@ -303,8 +303,8 @@ export function SessionForm({
             Autonomous Workflow Timeline
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            The API route runs six logical agents and stores a semantic mistake
-            memory after the analysis completes.
+            This is the core product loop: capture the reasoning, orchestrate
+            the agents, retrieve mistake memory, then repair the cognitive bug.
           </p>
           <div className="mt-5">
             <WorkflowTimeline steps={isLoading ? steps : emptySteps} />

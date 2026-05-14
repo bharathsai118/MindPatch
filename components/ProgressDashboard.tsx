@@ -30,7 +30,15 @@ export function ProgressDashboard({ progress }: ProgressDashboardProps) {
         <p className="mt-4 text-sm leading-6 text-slate-600">
           {progress.progress_summary}
         </p>
-        <div className="mt-5 grid gap-3">
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Score breakdown
+          </h3>
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+            Calculated
+          </span>
+        </div>
+        <div className="mt-3 grid gap-3">
           {progress.score_breakdown.map((item) => (
             <div
               className="rounded-md border border-slate-200 bg-slate-50 p-3"

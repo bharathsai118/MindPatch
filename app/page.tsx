@@ -12,19 +12,25 @@ import { HeroSection } from "@/components/HeroSection";
 const ecosystem = [
   {
     icon: Mic2,
-    title: "Omi ambient input",
-    body: "Receives spoken reasoning from an Omi webhook, then normalizes the raw transcript for analysis."
+    title: "Omi = ambient reasoning capture",
+    body: "MindPatch starts before the student writes code: Omi-style ambient input captures the spoken explanation that usually disappears."
   },
   {
     icon: BrainCircuit,
-    title: "Lyzr agent workflow",
-    body: "Six logical agents clean, trace, classify, retrieve memory, coach, and generate training plans."
+    title: "Lyzr = autonomous agent orchestration",
+    body: "A six-agent workflow cleans the transcript, reconstructs reasoning, classifies the cognitive bug, coaches, and plans practice."
   },
   {
     icon: Database,
-    title: "Qdrant memory",
-    body: "Stores semantic mistake memories so repeated cognitive bugs are surfaced across sessions."
+    title: "Qdrant = long-term mistake memory",
+    body: "Repeated reasoning failures become searchable vector memories, so the next session can replay the exact pattern."
   }
+];
+
+const judgeSignals = [
+  "It critiques the student's mental model, not their final answer.",
+  "It remembers recurring cognitive bugs across problems.",
+  "It produces a repair question and a training plan, not a solution dump."
 ];
 
 export default function HomePage() {
@@ -36,15 +42,16 @@ export default function HomePage() {
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-signal">
-              Cognitive debugger
+              Judge clarity
             </p>
             <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-              MindPatch finds the hidden bug in the student&apos;s thinking.
+              A DSA tutor answers. MindPatch debugs the reasoning failure.
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Most DSA tools answer the problem. MindPatch listens to the
-              reasoning process, detects where the mental model went off track,
-              remembers the pattern, and repairs it with a Socratic prompt.
+              The demo intentionally catches a student who knows the topic but
+              violates a hidden constraint. That is the product: identify why
+              the thinking went wrong, retrieve prior evidence, then train the
+              student out of the pattern.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -86,28 +93,50 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-slate-200 bg-white/70">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-12 sm:px-8 lg:grid-cols-3">
-          {[
-            "Reasoning Trace",
-            "Cognitive Bug Report",
-            "Mistake Memory Replay",
-            "Socratic Repair",
-            "Autonomous Training Plan",
-            "Cognitive Progress Score"
-          ].map((label, index) => (
-            <div className="flex items-start gap-3" key={label}>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white">
-                {index + 1}
-              </div>
-              <div>
-                <h3 className="font-semibold text-ink">{label}</h3>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Built for judges to see an autonomous learning loop, not a
-                  generic chatbot answer stream.
-                </p>
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amberline">
+                What judges should notice
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
+                The app demonstrates an autonomous learning loop.
+              </h2>
+              <div className="mt-5 space-y-3">
+                {judgeSignals.map((signal) => (
+                  <div
+                    className="rounded-md border border-slate-200 bg-white p-4 text-sm font-semibold leading-6 text-slate-700"
+                    key={signal}
+                  >
+                    {signal}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                ["1", "Reasoning Trace", "Reconstructs the student's mental steps."],
+                ["2", "Cognitive Bug Report", "Names the precise reasoning failure."],
+                ["3", "Mistake Memory Replay", "Retrieves similar prior cognitive bugs."],
+                ["4", "Socratic Repair", "Asks the question that fixes the model."],
+                ["5", "Autonomous Training Plan", "Turns the mistake into practice."],
+                ["6", "Cognitive Progress Score", "Tracks repeated patterns over time."]
+              ].map(([number, label, body]) => (
+                <div
+                  className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft"
+                  key={label}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-sm font-semibold text-white">
+                    {number}
+                  </div>
+                  <h3 className="mt-4 font-semibold text-ink">{label}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -117,15 +146,15 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-blue-200">
                 <Route className="h-4 w-4" />
-                Omi - MindPatch Backend - Lyzr Agents - Qdrant Memory - Dashboard
+                Omi capture - Lyzr agents - Qdrant memory - MindPatch dashboard
               </div>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                Run the complete demo with no external credentials.
+                Run the complete cognitive debugging demo.
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                Missing keys automatically activate mock Lyzr and mock Qdrant
-                adapters while preserving the same REST API shape and memory
-                schema used by the live integrations.
+                The fallback adapters keep the demo reliable, while the code
+                clearly marks where Omi, Lyzr, and Qdrant connect in a live
+                deployment.
               </p>
             </div>
             <Link

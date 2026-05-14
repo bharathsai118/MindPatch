@@ -23,12 +23,12 @@ export default async function SessionPage({ searchParams }: SessionPageProps) {
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
               {isJudgeDemo
-                ? "Judge Demo Mode: watch MindPatch debug a hidden DSA mistake."
+                ? "Judge Demo Mode: ambient reasoning becomes a cognitive bug report."
                 : "Speak your thinking. MindPatch debugs the pattern."}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               {isJudgeDemo
-                ? "The demo auto-runs a flawed Longest Substring transcript through transcript cleaning, reasoning trace, memory replay, Socratic repair, and a final training plan."
+                ? "The demo follows one flawed Longest Substring explanation through Omi-style capture, Lyzr-style agent orchestration, Qdrant-style memory replay, Socratic repair, and a final training plan."
                 : "Paste a transcript, use the demo transcript, or post to the Omi webhook. The same autonomous workflow produces the analysis."}
             </p>
           </div>

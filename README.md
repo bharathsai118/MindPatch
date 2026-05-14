@@ -2,7 +2,22 @@
 
 Autonomous Cognitive Debugger for DSA Students.
 
-MindPatch is not a normal DSA tutor. It does not jump straight to the answer. It listens to how a student explains a solution, finds the hidden reasoning bug, remembers repeated mistake patterns, and produces a Socratic repair plus a personalized training plan.
+MindPatch is not another answer generator. It listens to a student's spoken DSA reasoning, finds the hidden bug in the mental model, remembers repeated mistake patterns, and turns the failure into Socratic repair plus targeted practice.
+
+## Judge Summary
+
+Most AI tutors optimize for getting the final answer. MindPatch optimizes for debugging the student's thinking.
+
+In the demo, a student tries to solve Longest Substring by sorting the string. A normal tutor would explain sliding window. MindPatch does something more valuable:
+
+1. Captures the spoken reasoning.
+2. Reconstructs the student's mental steps.
+3. Finds the constraint misunderstanding.
+4. Retrieves a similar past mistake from Two Sum.
+5. Asks the Socratic repair question.
+6. Generates a personalized training plan.
+
+That makes the product a cognitive debugger, not a chatbot.
 
 ## Problem
 
@@ -57,9 +72,9 @@ Expected cognitive bug:
 
 ## Ecosystem Usage
 
-- **Omi** captures spoken reasoning through ambient input and posts transcript payloads to `/api/omi/webhook`.
-- **Lyzr AI** is represented as six logical reasoning agents in the backend workflow.
-- **Qdrant** stores and retrieves long-term cognitive mistake memory.
+- **Omi = ambient reasoning capture.** The student explains their approach out loud while solving; MindPatch receives the transcript through `/api/omi/webhook` or the manual/demo input.
+- **Lyzr = autonomous agent orchestration.** MindPatch models the workflow as specialized agents for cleaning, tracing, classifying, retrieving memory, coaching, and planning.
+- **Qdrant = long-term cognitive mistake memory.** Mistakes are embedded semantically so the system can replay similar prior failures across DSA topics.
 
 If credentials are missing, the app still works:
 
@@ -204,12 +219,24 @@ Suggested smoke test:
    - Autonomous Training Plan
 4. Open `/memory` and `/progress`.
 
+## What Was Weak Before
+
+The first MVP worked, but a judge could miss the product thesis because:
+
+- The landing page sounded like a polished tutor, not a cognitive debugger.
+- The Omi/Lyzr/Qdrant roles were present but not unmistakable.
+- The demo flow looked like a form submission instead of an autonomous system.
+- The analysis page buried the verdict inside normal cards.
+- The README explained setup before it sold the idea.
+
+The current version fixes those issues by making the cognitive-debugging loop visible on the landing page, demo timeline, analysis verdict, memory replay, and README.
+
 ## Why It Wins
 
-MindPatch shows an autonomous learning loop:
+MindPatch shows a complete autonomous learning loop:
 
 ```text
-spoken reasoning -> cognitive bug -> memory replay -> Socratic repair -> personalized practice -> progress score
+Omi speech capture -> Lyzr agent reasoning -> Qdrant mistake replay -> Socratic repair -> personalized practice -> progress score
 ```
 
 That loop is the product. The answer is secondary.

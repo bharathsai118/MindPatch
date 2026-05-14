@@ -38,7 +38,7 @@ export function CognitiveBugCard({ report }: CognitiveBugCardProps) {
       <div className="mt-5 space-y-4">
         <section>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Mistake
+            Cognitive bug
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {report.mistake_summary}
@@ -54,7 +54,7 @@ export function CognitiveBugCard({ report }: CognitiveBugCardProps) {
         </section>
         <section>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Why it is wrong
+            Why the mental model breaks
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {report.why_it_is_wrong}

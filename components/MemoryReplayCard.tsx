@@ -23,6 +23,10 @@ export function MemoryReplayCard({ replay }: MemoryReplayCardProps) {
           Long-term memory
         </span>
       </div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Qdrant-style memory makes the product personal: the current bug is
+        compared against prior reasoning failures, not generic DSA notes.
+      </p>
 
       <div className="mt-5 space-y-4">
         {replay.similar_memories.length === 0 ? (
