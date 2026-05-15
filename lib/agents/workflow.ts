@@ -1,5 +1,6 @@
 import { saveAnalysis } from "@/lib/storage/json-store";
 import { invokeAgentJson } from "@/lib/agents/agent-client";
+import { getIntegrationStatus } from "@/lib/config";
 import {
   inferDifficulty,
   inferTopic,
@@ -26,6 +27,15 @@ import type {
   TrainingPlan,
   TranscriptCleanerOutput
 } from "@/lib/types";
+
+type CoreWorkflowOutput = {
+  transcript_cleaner: TranscriptCleanerOutput;
+  reasoning_trace: ReasoningTrace;
+  mistake_report: MistakeReport;
+  socratic_repair: SocraticRepair;
+  training_plan: TrainingPlan;
+  code_complexity: CodeComplexityAnalysis;
+};
 
 function normalizeMistakeReport(report: MistakeReport): MistakeReport {
   if (report.mistake_found) return report;
@@ -99,6 +109,22 @@ function normalizeCodeComplexityAnalysis(
       typeof report.code_detected === "boolean"
         ? report.code_detected
         : fallback.code_detected,
+    approach_current:
+      report.approach_current || fallback.approach_current || "Inferred approach",
+    approach_suggested:
+      report.approach_suggested ||
+      fallback.approach_suggested ||
+      fallback.optimization_path[0]?.improved ||
+      "Validate the invariant, then choose the pattern",
+    approach_key_idea:
+      report.approach_key_idea ||
+      fallback.approach_key_idea ||
+      fallback.complexity_reasoning[0] ||
+      "Tie the algorithm choice to the constraint it preserves.",
+    approach_consideration:
+      report.approach_consideration ||
+      fallback.approach_consideration ||
+      "Can you prove why the selected pattern preserves every required constraint?",
     current_time_complexity:
       report.current_time_complexity || fallback.current_time_complexity,
     current_space_complexity:
@@ -127,6 +153,75 @@ function normalizeCodeComplexityAnalysis(
     clean_code_hints: asStringList(
       report.clean_code_hints,
       fallback.clean_code_hints
+    ),
+    readability: report.readability || fallback.readability || "Good",
+    structure: report.structure || fallback.structure || "Solid",
+    style_suggestions:
+      report.style_suggestions ||
+      fallback.style_suggestions ||
+      fallback.clean_code_hints[0] ||
+      "Use names that expose the invariant and the role of each pointer or state variable."
+  };
+}
+
+function buildMockCoreWorkflow(
+  input: AnalyzeSessionInput,
+  topic: string
+): CoreWorkflowOutput {
+  const transcriptCleaner = mockTranscriptCleaner(input);
+  const trace = mockReasoningTrace(transcriptCleaner.cleaned_transcript);
+  const mistake = normalizeMistakeReport(
+    mockMistakeClassifier({
+      input,
+      trace,
+      cleanedTranscript: transcriptCleaner.cleaned_transcript
+    })
+  );
+  const memoryReplay = { similar_memories: [] };
+
+  return {
+    transcript_cleaner: transcriptCleaner,
+    reasoning_trace: trace,
+    mistake_report: mistake,
+    socratic_repair: mockSocraticCoach({ mistake, memoryReplay }),
+    training_plan: mockTrainingPlan({ mistake, topic }),
+    code_complexity: mockCodeComplexityAnalysis({
+      input,
+      cleanedTranscript: transcriptCleaner.cleaned_transcript,
+      mistake
+    })
+  };
+}
+
+function normalizeCoreWorkflowOutput(
+  output: Partial<CoreWorkflowOutput>,
+  fallback: CoreWorkflowOutput
+): CoreWorkflowOutput {
+  const transcriptCleaner =
+    output.transcript_cleaner ?? fallback.transcript_cleaner;
+  const trace = output.reasoning_trace ?? fallback.reasoning_trace;
+  const mistake = normalizeMistakeReport(
+    output.mistake_report ?? fallback.mistake_report
+  );
+  const codeFallback = mockCodeComplexityAnalysis({
+    input: {
+      problem_name: fallback.transcript_cleaner.problem_detected,
+      problem_text: "",
+      transcript: transcriptCleaner.cleaned_transcript
+    },
+    cleanedTranscript: transcriptCleaner.cleaned_transcript,
+    mistake
+  });
+
+  return {
+    transcript_cleaner: transcriptCleaner,
+    reasoning_trace: trace,
+    mistake_report: mistake,
+    socratic_repair: output.socratic_repair ?? fallback.socratic_repair,
+    training_plan: output.training_plan ?? fallback.training_plan,
+    code_complexity: normalizeCodeComplexityAnalysis(
+      output.code_complexity ?? fallback.code_complexity,
+      fallback.code_complexity ?? codeFallback
     )
   };
 }
@@ -333,6 +428,10 @@ async function codeComplexityAgent(args: {
         "Use scores from 0 to 100 where higher is better. Optimized scores should reflect the best realistic approach for this problem, not fantasy constant time.",
       output_schema: {
         code_detected: "boolean",
+        approach_current: "student's current algorithmic approach, e.g. Two Pointers / Greedy",
+        approach_suggested: "best suggested approach, e.g. Sliding Window",
+        approach_key_idea: "one sentence key idea behind the suggested approach",
+        approach_consideration: "one Socratic proof question about the approach",
         current_time_complexity: "string like O(n), O(n log n), O(log n), O(1)",
         current_space_complexity: "string",
         optimized_time_complexity: "string",
@@ -353,7 +452,10 @@ async function codeComplexityAgent(args: {
         ],
         clean_code_hints: [
           "specific hint about naming, invariants, guard clauses, comments, or structure"
-        ]
+        ],
+        readability: "Poor | Fair | Good | Excellent",
+        structure: "Poor | Fair | Good | Excellent",
+        style_suggestions: "one concise clean-code suggestion"
       }
     }),
     fallback: () => fallback,
@@ -362,6 +464,116 @@ async function codeComplexityAgent(args: {
   });
 
   return normalizeCodeComplexityAnalysis(report, fallback);
+}
+
+async function huggingFaceCoreWorkflowAgent(args: {
+  input: AnalyzeSessionInput;
+  topic: string;
+  difficulty: string;
+  sessionId: string;
+}): Promise<CoreWorkflowOutput> {
+  const fallback = buildMockCoreWorkflow(args.input, args.topic);
+  const output = await invokeAgentJson<Partial<CoreWorkflowOutput>>({
+    agentName: "MindPatch Autonomous Agent Workflow",
+    sessionId: args.sessionId,
+    prompt: JSON.stringify({
+      task:
+        "Run the full MindPatch cognitive-debugging workflow in one pass. Analyze the student's DSA transcript/code. Do not dump final code. Return one valid JSON object only.",
+      problem: {
+        name: args.input.problem_name,
+        text: args.input.problem_text,
+        topic: args.topic,
+        difficulty: args.difficulty
+      },
+      transcript: args.input.transcript,
+      agent_workflow: [
+        "Transcript Cleaner Agent",
+        "Reasoning Trace Agent",
+        "Mistake Classifier Agent",
+        "Socratic Coach Agent",
+        "Training Plan Agent",
+        "Code Complexity Analyst Agent"
+      ],
+      mistake_rule:
+        "If the code/reasoning is correct, return mistake_found false and use mistake_type no_cognitive_bug. Do not invent fake bugs.",
+      complexity_rule:
+        "Always include approach_current, approach_suggested, approach_key_idea, approach_consideration, time/space complexity, readability, structure, and style_suggestions.",
+      output_schema: {
+        transcript_cleaner: {
+          cleaned_transcript: "string",
+          student_intent: "string",
+          problem_detected: "string"
+        },
+        reasoning_trace: {
+          reasoning_steps: ["Step 1...", "Step 2...", "Step 3..."]
+        },
+        mistake_report: {
+          mistake_found: "boolean",
+          mistake_type:
+            "no_cognitive_bug | constraint_misunderstanding | wrong_data_structure | missed_edge_case | brute_force_trap | premature_optimization | pattern_mismatch | time_complexity_blind_spot | false_confidence | recursion_base_case_error | graph_traversal_confusion",
+          mistake_summary: "string",
+          evidence_from_transcript: "string",
+          why_it_is_wrong: "string",
+          correct_pattern: "string",
+          severity: "low | medium | high"
+        },
+        socratic_repair: {
+          socratic_question: "string",
+          hint: "string",
+          correction: "string",
+          mini_rule: "string"
+        },
+        training_plan: {
+          weakness_pattern: "string",
+          practice_tasks: [
+            {
+              problem_name: "string",
+              topic: "string",
+              goal: "string",
+              why_this_problem: "string"
+            }
+          ],
+          micro_drill: "string",
+          daily_reflection: "string"
+        },
+        code_complexity: {
+          code_detected: "boolean",
+          approach_current: "string",
+          approach_suggested: "string",
+          approach_key_idea: "string",
+          approach_consideration: "string",
+          current_time_complexity: "string",
+          current_space_complexity: "string",
+          optimized_time_complexity: "string",
+          optimized_space_complexity: "string",
+          time_score: "number 0-100",
+          space_score: "number 0-100",
+          optimized_time_score: "number 0-100",
+          optimized_space_score: "number 0-100",
+          complexity_reasoning: ["string"],
+          bottlenecks: ["string"],
+          optimization_path: [
+            {
+              title: "string",
+              current: "string",
+              improved: "string",
+              why_it_helps: "string"
+            }
+          ],
+          clean_code_hints: ["string"],
+          readability: "Poor | Fair | Good | Excellent",
+          structure: "Poor | Fair | Good | Excellent",
+          style_suggestions: "string"
+        }
+      }
+    }),
+    fallback: () => fallback,
+    allowFallbackOnLiveFailure: true,
+    timeoutMs: 90000,
+    maxTokens: 2200
+  });
+
+  return normalizeCoreWorkflowOutput(output, fallback);
 }
 
 export async function analyzeReasoningSession(
@@ -373,6 +585,58 @@ export async function analyzeReasoningSession(
   const topic = input.topic ?? inferTopic(input.problem_name, input.problem_text);
   const difficulty =
     input.difficulty ?? inferDifficulty(input.problem_name, input.problem_text);
+
+  if (getIntegrationStatus().agentProvider === "huggingface") {
+    const core = await huggingFaceCoreWorkflowAgent({
+      input,
+      topic,
+      difficulty,
+      sessionId
+    });
+    const memoryReplay = core.mistake_report.mistake_found
+      ? await memoryRetrievalAgent({
+          problemName: input.problem_name,
+          topic,
+          mistake: core.mistake_report
+        })
+      : { similar_memories: [] };
+    const analysis: AnalysisResult = {
+      session_id: sessionId,
+      user_id: userId,
+      problem_name: input.problem_name,
+      problem_text: input.problem_text,
+      topic,
+      difficulty,
+      cleaned_transcript: core.transcript_cleaner.cleaned_transcript,
+      student_intent: core.transcript_cleaner.student_intent,
+      problem_detected: core.transcript_cleaner.problem_detected,
+      reasoning_trace: core.reasoning_trace,
+      mistake_report: core.mistake_report,
+      memory_replay: memoryReplay,
+      socratic_repair: core.socratic_repair,
+      training_plan: core.training_plan,
+      code_complexity: core.code_complexity,
+      created_at: createdAt
+    };
+
+    await saveAnalysis(analysis);
+
+    if (core.mistake_report.mistake_found) {
+      const memory = buildMemoryFromAnalysis({
+        sessionId,
+        userId,
+        problemName: input.problem_name,
+        topic,
+        difficulty,
+        mistake: core.mistake_report,
+        socraticQuestion: core.socratic_repair.socratic_question,
+        createdAt
+      });
+      await storeMistakeMemory(memory);
+    }
+
+    return analysis;
+  }
 
   const cleaner = await transcriptCleanerAgent(input, sessionId);
   const trace = await reasoningTraceAgent({

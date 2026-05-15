@@ -9,6 +9,7 @@ export async function invokeAgentJson<T>(args: {
   fallback: () => Promise<T> | T;
   allowFallbackOnLiveFailure?: boolean;
   timeoutMs?: number;
+  maxTokens?: number;
 }): Promise<T> {
   const status = getIntegrationStatus();
 
@@ -30,7 +31,8 @@ export async function invokeAgentJson<T>(args: {
     const huggingFaceOutput = await invokeHuggingFaceJson<T>({
       agentName: args.agentName,
       prompt: args.prompt,
-      timeoutMs: args.timeoutMs
+      timeoutMs: args.timeoutMs,
+      maxTokens: args.maxTokens
     });
 
     if (huggingFaceOutput) return huggingFaceOutput;

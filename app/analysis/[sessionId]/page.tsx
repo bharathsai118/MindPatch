@@ -209,7 +209,11 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
           <ReasoningTraceCard trace={analysis.reasoning_trace} />
           <CognitiveBugCard report={analysis.mistake_report} />
           <div className="lg:col-span-2">
-            <CodeComplexityCard analysis={codeComplexity} />
+            <CodeComplexityCard
+              analysis={codeComplexity}
+              mistake={analysis.mistake_report}
+              transcript={analysis.cleaned_transcript}
+            />
           </div>
           <MemoryReplayCard
             mistakeFound={bugFound}

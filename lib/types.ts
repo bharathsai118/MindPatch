@@ -105,6 +105,10 @@ export type ComplexityOptimization = {
 
 export type CodeComplexityAnalysis = {
   code_detected: boolean;
+  approach_current?: string;
+  approach_suggested?: string;
+  approach_key_idea?: string;
+  approach_consideration?: string;
   current_time_complexity: string;
   current_space_complexity: string;
   optimized_time_complexity: string;
@@ -117,6 +121,9 @@ export type CodeComplexityAnalysis = {
   bottlenecks: string[];
   optimization_path: ComplexityOptimization[];
   clean_code_hints: string[];
+  readability?: string;
+  structure?: string;
+  style_suggestions?: string;
 };
 
 export type AnalysisResult = {

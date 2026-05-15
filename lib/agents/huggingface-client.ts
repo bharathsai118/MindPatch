@@ -29,6 +29,7 @@ export async function invokeHuggingFaceJson<T>(args: {
   agentName: string;
   prompt: string;
   timeoutMs?: number;
+  maxTokens?: number;
 }): Promise<T | null> {
   if (!getIntegrationStatus().huggingFaceConfigured) {
     return null;
@@ -56,7 +57,7 @@ export async function invokeHuggingFaceJson<T>(args: {
         model,
         stream: false,
         temperature: 0.2,
-        max_tokens: 900,
+        max_tokens: args.maxTokens ?? 900,
         messages: [
           {
             role: "system",

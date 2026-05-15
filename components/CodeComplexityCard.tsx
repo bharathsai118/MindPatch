@@ -1,193 +1,309 @@
-import { ArrowRight, Code2, Gauge, Sparkles, Target } from "lucide-react";
-import type { CodeComplexityAnalysis } from "@/lib/types";
+import {
+  Check,
+  ChevronDown,
+  Code2,
+  GitBranch,
+  ThumbsDown,
+  ThumbsUp,
+  Wand2,
+  Zap
+} from "lucide-react";
+import type { CodeComplexityAnalysis, MistakeReport } from "@/lib/types";
 
 type CodeComplexityCardProps = {
   analysis: CodeComplexityAnalysis;
+  transcript: string;
+  mistake: MistakeReport;
 };
 
-function clampScore(score: number) {
-  if (!Number.isFinite(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
+function normalizeBigO(value: string) {
+  return value.replace(/log10\s*n/gi, "log N").replace(/\bn\b/g, "N");
 }
 
-function MetricBar({
-  label,
-  current,
-  optimized,
-  currentScore,
-  optimizedScore
-}: {
-  label: string;
-  current: string;
-  optimized: string;
-  currentScore: number;
-  optimizedScore: number;
-}) {
-  const currentWidth = clampScore(currentScore);
-  const optimizedWidth = clampScore(optimizedScore);
+function getPrimarySuggestion(analysis: CodeComplexityAnalysis) {
+  const alreadyOptimal =
+    analysis.current_time_complexity === analysis.optimized_time_complexity &&
+    analysis.current_space_complexity === analysis.optimized_space_complexity &&
+    analysis.optimized_time_score >= analysis.time_score &&
+    analysis.optimized_space_score >= analysis.space_score;
+
+  if (alreadyOptimal) {
+    return "Strong efficiency achieved; the current solution is already close to optimal in both time and space.";
+  }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            {label}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-950 px-2.5 py-1 text-sm font-semibold text-white">
-              {current}
-            </span>
-            <ArrowRight className="h-4 w-4 text-slate-400" />
-            <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100">
-              {optimized}
-            </span>
-          </div>
-        </div>
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-          Higher is better
-        </span>
-      </div>
+    analysis.optimization_path[0]?.why_it_helps ||
+    analysis.bottlenecks[0] ||
+    "Use the suggested approach to reduce avoidable work while preserving correctness."
+  );
+}
 
-      <div className="mt-4 space-y-3">
-        <div>
-          <div className="flex justify-between text-xs font-semibold text-slate-500">
-            <span>Current</span>
-            <span>{currentWidth}/100</span>
-          </div>
-          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-amber-500"
-              style={{ width: `${Math.max(8, currentWidth)}%` }}
-            />
-          </div>
+function inferLanguage(transcript: string) {
+  if (/class\s+Solution|#include|vector<|public:/i.test(transcript)) return "C++";
+  if (/def\s+\w+\(|self\b|List\[/i.test(transcript)) return "Python";
+  if (/function\s+\w+|const\s+\w+\s*=|let\s+\w+\s*=|=>/i.test(transcript)) {
+    return "TypeScript / JavaScript";
+  }
+  if (/public\s+class|static\s+|ArrayList|HashMap/i.test(transcript)) return "Java";
+  return "Transcript";
+}
+
+function getCodeLines(transcript: string) {
+  const lines = transcript
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/\s+$/g, ""));
+  const firstCodeLine = lines.findIndex((line) =>
+    /class\s+Solution|#include|public:|def\s+\w+\(|function\s+\w+|while\s*\(|for\s*\(|return\s+/i.test(
+      line
+    )
+  );
+
+  if (firstCodeLine < 0) return [];
+  return lines.slice(firstCodeLine).filter((line) => line.trim().length > 0);
+}
+
+function ComplexityGraph({ label }: { label: string }) {
+  return (
+    <div className="relative min-h-36 overflow-hidden rounded-lg bg-[#24252d] p-4">
+      <p className="absolute right-8 top-2 font-serif text-lg font-semibold italic text-white">
+        {normalizeBigO(label)}
+      </p>
+      <svg
+        aria-hidden="true"
+        className="absolute bottom-3 right-4 h-32 w-44"
+        viewBox="0 0 180 130"
+      >
+        <path d="M18 112H160" stroke="#3f414a" strokeWidth="1.5" />
+        <path d="M18 112V8" stroke="#3f414a" strokeWidth="1.5" />
+        <path
+          d="M18 112C50 98 89 86 160 82"
+          fill="none"
+          stroke="#555862"
+          strokeLinecap="round"
+          strokeWidth="2.5"
+        />
+        <path
+          d="M18 112L160 8"
+          fill="none"
+          stroke="#a7abb6"
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+        <path
+          d="M18 112C40 72 50 35 60 8"
+          fill="none"
+          stroke="#5f626d"
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+        <path
+          d="M18 112C30 70 36 36 42 8"
+          fill="none"
+          stroke="#4a4d58"
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+        <path d="M18 118H160" stroke="#353740" strokeWidth="1.5" />
+      </svg>
+    </div>
+  );
+}
+
+function CodePreview({
+  transcript,
+  codeDetected
+}: {
+  transcript: string;
+  codeDetected: boolean;
+}) {
+  const codeLines = getCodeLines(transcript);
+  const visibleLines = codeLines.slice(0, 9);
+
+  if (!codeDetected || codeLines.length === 0) {
+    return (
+      <section className="rounded-lg border border-white/10 bg-[#2a2b32] p-4 text-sm leading-6 text-slate-300">
+        <div className="flex items-center gap-2 text-slate-400">
+          <Code2 className="h-4 w-4" />
+          <span className="font-semibold">Code</span>
+          <span className="text-slate-500">|</span>
+          <span>Algorithm transcript</span>
         </div>
-        <div>
-          <div className="flex justify-between text-xs font-semibold text-slate-500">
-            <span>Optimized</span>
-            <span>{optimizedWidth}/100</span>
+        <p className="mt-3">
+          No full code block was detected, so MindPatch analyzed the algorithmic
+          reasoning from the transcript.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-400">
+        <Code2 className="h-4 w-4" />
+        <span>Code</span>
+        <span className="text-slate-600">|</span>
+        <span>{inferLanguage(transcript)}</span>
+      </div>
+      <div className="overflow-hidden rounded-lg bg-[#303030] p-5 font-mono text-sm leading-6 text-slate-100">
+        {visibleLines.map((line, index) => (
+          <div className="grid grid-cols-[2rem_1fr] gap-3" key={`${line}-${index}`}>
+            <span className="select-none text-right text-emerald-400/80">
+              {index + 1}
+            </span>
+            <code className="whitespace-pre-wrap break-words">{line}</code>
           </div>
-          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-emerald-600"
-              style={{ width: `${Math.max(8, optimizedWidth)}%` }}
-            />
+        ))}
+        {codeLines.length > visibleLines.length ? (
+          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-slate-400">
+            <ChevronDown className="h-4 w-4" />
+            View more
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );
 }
 
-export function CodeComplexityCard({ analysis }: CodeComplexityCardProps) {
+export function CodeComplexityCard({
+  analysis,
+  transcript,
+  mistake
+}: CodeComplexityCardProps) {
+  const currentApproach =
+    analysis.approach_current ||
+    analysis.optimization_path[0]?.current ||
+    "Inferred approach";
+  const suggestedApproach =
+    analysis.approach_suggested ||
+    analysis.optimization_path[0]?.improved ||
+    mistake.correct_pattern;
+  const keyIdea =
+    analysis.approach_key_idea ||
+    analysis.complexity_reasoning[0] ||
+    mistake.correct_pattern;
+  const consideration =
+    analysis.approach_consideration ||
+    mistake.why_it_is_wrong ||
+    "Can you prove the invariant before coding the next step?";
+  const styleSuggestion =
+    analysis.style_suggestions ||
+    analysis.clean_code_hints[0] ||
+    "Use descriptive variable names and keep the core invariant visible.";
+
   return (
-    <article className="card rounded-lg p-5 md:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Gauge className="h-5 w-5 text-signal" />
-          <h2 className="text-lg font-semibold text-ink">
-            Code Complexity & Optimization
-          </h2>
+    <article className="overflow-hidden rounded-lg border border-slate-800 bg-[#1d1d21] text-white shadow-soft">
+      <header className="flex flex-col gap-3 border-b border-white/10 bg-[#23232a] px-5 py-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-violet-300">
+          {["Approach", "Efficiency", "Code Style"].map((item) => (
+            <span className="inline-flex items-center gap-1.5" key={item}>
+              <Check className="h-4 w-4" />
+              {item}
+            </span>
+          ))}
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-          {analysis.code_detected ? "Code detected" : "Algorithm inferred"}
-        </span>
-      </div>
+        <div className="flex items-center gap-3 text-slate-400">
+          <ThumbsUp className="h-4 w-4" />
+          <ThumbsDown className="h-4 w-4" />
+        </div>
+      </header>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <MetricBar
-          current={analysis.current_time_complexity}
-          currentScore={analysis.time_score}
-          label="Time complexity"
-          optimized={analysis.optimized_time_complexity}
-          optimizedScore={analysis.optimized_time_score}
-        />
-        <MetricBar
-          current={analysis.current_space_complexity}
-          currentScore={analysis.space_score}
-          label="Space complexity"
-          optimized={analysis.optimized_space_complexity}
-          optimizedScore={analysis.optimized_space_score}
-        />
-      </div>
-
-      <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-4 w-4 text-slate-700" />
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Complexity reasoning
-            </p>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {analysis.complexity_reasoning.map((item) => (
-              <li className="text-sm leading-6 text-slate-700" key={item}>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="rounded-lg border border-red-100 bg-red-50 p-4">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-red-700" />
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600">
-              Bottlenecks
-            </p>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {analysis.bottlenecks.map((item) => (
-              <li className="text-sm leading-6 text-red-900" key={item}>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <div className="mt-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Optimization path
+      <div className="space-y-5 p-5">
+        <p className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-4 py-3 text-sm leading-6 text-violet-200">
+          {mistake.mistake_found
+            ? "MindPatch found an approach risk and converted it into a repair path."
+            : "Congratulations. MindPatch found sound reasoning and is reinforcing the approach, efficiency, and code style."}
         </p>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          {analysis.optimization_path.map((item) => (
-            <section
-              className="rounded-lg border border-blue-100 bg-blue-50 p-4"
-              key={item.title}
-            >
-              <h3 className="font-semibold text-blue-950">{item.title}</h3>
-              <div className="mt-3 grid gap-2 text-sm leading-6 text-blue-950">
-                <p>
-                  <span className="font-semibold">Current:</span> {item.current}
-                </p>
-                <p>
-                  <span className="font-semibold">Improve:</span>{" "}
-                  {item.improved}
-                </p>
-                <p className="text-blue-800">{item.why_it_helps}</p>
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
 
-      <section className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-emerald-700" />
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            Clean code hints
-          </p>
-        </div>
-        <div className="mt-3 grid gap-2 md:grid-cols-3">
-          {analysis.clean_code_hints.map((hint) => (
-            <p
-              className="rounded-md bg-white p-3 text-sm leading-6 text-emerald-950 ring-1 ring-emerald-100"
-              key={hint}
-            >
-              {hint}
+        <section className="rounded-lg bg-[#25222d] p-5">
+          <div className="flex items-center gap-2 text-lg font-semibold text-violet-400">
+            <GitBranch className="h-5 w-5" />
+            Approach
+          </div>
+          <div className="mt-4 space-y-2 text-sm leading-6">
+            <p>
+              <span className="text-slate-300">Current:</span>{" "}
+              <strong>{currentApproach}</strong>
             </p>
-          ))}
-        </div>
-      </section>
+            <p>
+              <span className="text-slate-300">Suggested:</span>{" "}
+              <strong className="text-emerald-400">{suggestedApproach}</strong>
+            </p>
+            <p>
+              <span className="text-slate-300">Key Idea:</span>{" "}
+              <strong>{keyIdea}</strong>
+            </p>
+            <p>
+              <span className="text-slate-300">Consider:</span>{" "}
+              <strong>{consideration}</strong>
+            </p>
+          </div>
+        </section>
+
+        <section className="grid gap-5 rounded-lg bg-[#25232c] p-5 lg:grid-cols-[1fr_0.38fr]">
+          <div>
+            <div className="flex items-center gap-2 text-lg font-semibold text-violet-400">
+              <Zap className="h-5 w-5" />
+              Efficiency
+            </div>
+            <div className="mt-4 space-y-2 text-sm leading-6">
+              <p>
+                <span className="text-slate-300">Current complexity:</span>{" "}
+                <strong className="font-serif text-lg italic">
+                  {normalizeBigO(analysis.current_time_complexity)}
+                </strong>
+                <span className="text-slate-500"> time</span>
+                <span className="text-slate-500"> / </span>
+                <strong>{normalizeBigO(analysis.current_space_complexity)}</strong>
+                <span className="text-slate-500"> space</span>
+              </p>
+              <p>
+                <span className="text-slate-300">Suggested complexity:</span>{" "}
+                <strong className="font-serif text-lg italic text-emerald-400">
+                  {normalizeBigO(analysis.optimized_time_complexity)}
+                </strong>
+                <span className="text-slate-500"> time</span>
+                <span className="text-slate-500"> / </span>
+                <strong className="text-emerald-400">
+                  {normalizeBigO(analysis.optimized_space_complexity)}
+                </strong>
+                <span className="text-slate-500"> space</span>
+              </p>
+              <p>
+                <span className="text-slate-300">Suggestions:</span>{" "}
+                <strong>{getPrimarySuggestion(analysis)}</strong>
+              </p>
+            </div>
+          </div>
+          <ComplexityGraph label={analysis.optimized_time_complexity} />
+        </section>
+
+        <CodePreview
+          codeDetected={analysis.code_detected}
+          transcript={transcript}
+        />
+
+        <section className="rounded-lg bg-[#23232d] p-5">
+          <div className="flex items-center gap-2 text-lg font-semibold text-violet-400">
+            <Wand2 className="h-5 w-5" />
+            Code Style
+          </div>
+          <div className="mt-4 space-y-2 text-sm leading-6">
+            <p>
+              <span className="text-slate-300">Readability:</span>{" "}
+              <strong>{analysis.readability || "Good"}</strong>
+            </p>
+            <p>
+              <span className="text-slate-300">Structure:</span>{" "}
+              <strong>{analysis.structure || "Solid"}</strong>
+            </p>
+            <p>
+              <span className="text-slate-300">Suggestions:</span>{" "}
+              <strong>{styleSuggestion}</strong>
+            </p>
+          </div>
+        </section>
+      </div>
     </article>
   );
 }

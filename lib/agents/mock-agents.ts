@@ -439,6 +439,12 @@ export function mockCodeComplexityAnalysis(args: {
   if (isPalindromeHalfReversal(args.input, args.cleanedTranscript)) {
     return {
       code_detected: true,
+      approach_current: "Numeric half reversal",
+      approach_suggested: "Numeric half reversal",
+      approach_key_idea:
+        "Reverse only the right half of the digits and compare it with the remaining left half.",
+      approach_consideration:
+        "Can you explain why the middle digit should be ignored for odd-length numbers?",
       current_time_complexity: "O(log10 n)",
       current_space_complexity: "O(1)",
       optimized_time_complexity: "O(log10 n)",
@@ -476,13 +482,23 @@ export function mockCodeComplexityAnalysis(args: {
         "Rename reversed to reversedHalf to communicate the invariant.",
         "Add a short comment before the loop: reverse the right half until it catches the left half.",
         "Keep the trailing-zero guard close to the negative guard because both are invalid-shape checks."
-      ]
+      ],
+      readability: "Good",
+      structure: "Excellent",
+      style_suggestions:
+        "Rename reversed to reversedHalf and add one invariant comment before the loop."
     };
   }
 
   if (combined.includes("substring") && combined.includes("sort")) {
     return {
       code_detected: codeDetected,
+      approach_current: "Sorting + duplicate removal",
+      approach_suggested: "Sliding window",
+      approach_key_idea:
+        "Maintain a contiguous window over the original string where every character is unique.",
+      approach_consideration:
+        "What does the word substring require that sorting destroys?",
       current_time_complexity: "O(n log n)",
       current_space_complexity: "O(n)",
       optimized_time_complexity: "O(n)",
@@ -520,13 +536,23 @@ export function mockCodeComplexityAnalysis(args: {
         "Name the window invariant before coding: current window has no repeated characters.",
         "Use variables like left, right, lastSeen, and bestLength to make pointer roles obvious.",
         "Write one edge-case test beside the code: s = 'abba' should return 2."
-      ]
+      ],
+      readability: "Fair",
+      structure: "Needs repair",
+      style_suggestions:
+        "Write the invariant first, then name variables around the sliding window roles."
     };
   }
 
   if (combined.includes("two pointer") || combined.includes("two pointers")) {
     return {
       code_detected: codeDetected,
+      approach_current: "Two pointers",
+      approach_suggested: "Hash map for unsorted input",
+      approach_key_idea:
+        "Use complement lookup so correctness does not depend on sorted order.",
+      approach_consideration:
+        "Which precondition makes pointer movement valid, and does this input guarantee it?",
       current_time_complexity: "O(n)",
       current_space_complexity: "O(1)",
       optimized_time_complexity: "O(n)",
@@ -557,12 +583,22 @@ export function mockCodeComplexityAnalysis(args: {
         "Write the precondition above the chosen pattern: sorted input or hash map.",
         "Use names like complement and indexByValue for readable lookup logic.",
         "Keep duplicate handling explicit when the same value can appear twice."
-      ]
+      ],
+      readability: "Good",
+      structure: "Fair",
+      style_suggestions:
+        "Put the sorted-input precondition in code comments or switch to names that expose hash-map lookup."
     };
   }
 
   return {
     code_detected: codeDetected,
+    approach_current: "Inferred single-pass pattern",
+    approach_suggested: "Invariant-first implementation",
+    approach_key_idea:
+      "Choose the data structure only after naming the state that must stay true.",
+    approach_consideration:
+      "Can you state the invariant and one input that would break it?",
     current_time_complexity: "O(n)",
     current_space_complexity: "O(1)",
     optimized_time_complexity: "Depends on chosen pattern",
@@ -593,6 +629,10 @@ export function mockCodeComplexityAnalysis(args: {
       "Use variable names that encode roles, not types.",
       "Keep edge-case guards before the main loop.",
       "Add one comment only where it states an invariant or non-obvious tradeoff."
-    ]
+    ],
+    readability: "Good",
+    structure: "Solid",
+    style_suggestions:
+      "Use role-based variable names and keep the invariant close to the main loop."
   };
 }
