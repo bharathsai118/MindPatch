@@ -4,6 +4,7 @@ import {
 } from "@/lib/demo-data";
 import type {
   AnalyzeSessionInput,
+  CodeComplexityAnalysis,
   MemoryReplay,
   MistakeReport,
   ReasoningTrace,
@@ -420,5 +421,178 @@ export function mockTrainingPlan(args: {
       `For each ${args.topic} problem, write one invariant and one counterexample before choosing the pattern.`,
     daily_reflection:
       "What assumption did I make first, and what input would break it?"
+  };
+}
+
+export function mockCodeComplexityAnalysis(args: {
+  input: AnalyzeSessionInput;
+  cleanedTranscript: string;
+  mistake: MistakeReport;
+}): CodeComplexityAnalysis {
+  const combined =
+    `${args.input.problem_name} ${args.input.problem_text} ${args.cleanedTranscript}`.toLowerCase();
+  const codeDetected =
+    /class\s+\w+|bool\s+\w+|int\s+\w+|for\s*\(|while\s*\(|return\s+/i.test(
+      args.cleanedTranscript
+    );
+
+  if (isPalindromeHalfReversal(args.input, args.cleanedTranscript)) {
+    return {
+      code_detected: true,
+      current_time_complexity: "O(log10 n)",
+      current_space_complexity: "O(1)",
+      optimized_time_complexity: "O(log10 n)",
+      optimized_space_complexity: "O(1)",
+      time_score: 88,
+      space_score: 96,
+      optimized_time_score: 88,
+      optimized_space_score: 96,
+      complexity_reasoning: [
+        "The loop removes one decimal digit from x on each iteration.",
+        "Only half of the digits are reversed because the loop stops when x <= reversed.",
+        "The solution uses a constant number of integer variables."
+      ],
+      bottlenecks: [
+        "No meaningful asymptotic bottleneck remains for numeric palindrome checking.",
+        "Runtime is proportional to the number of digits, not the numeric value itself."
+      ],
+      optimization_path: [
+        {
+          title: "Already asymptotically optimal",
+          current: "Half reversal over digits",
+          improved: "Keep half reversal",
+          why_it_helps:
+            "String conversion would also be O(d), but this keeps O(1) auxiliary space and satisfies the follow-up."
+        },
+        {
+          title: "Preserve edge-case guards",
+          current: "Reject negatives and non-zero trailing-zero values first",
+          improved: "Keep the guards before the loop",
+          why_it_helps:
+            "These checks avoid unnecessary reversal and make the invariant easier to prove."
+        }
+      ],
+      clean_code_hints: [
+        "Rename reversed to reversedHalf to communicate the invariant.",
+        "Add a short comment before the loop: reverse the right half until it catches the left half.",
+        "Keep the trailing-zero guard close to the negative guard because both are invalid-shape checks."
+      ]
+    };
+  }
+
+  if (combined.includes("substring") && combined.includes("sort")) {
+    return {
+      code_detected: codeDetected,
+      current_time_complexity: "O(n log n)",
+      current_space_complexity: "O(n)",
+      optimized_time_complexity: "O(n)",
+      optimized_space_complexity: "O(min(n, charset))",
+      time_score: 45,
+      space_score: 58,
+      optimized_time_score: 84,
+      optimized_space_score: 76,
+      complexity_reasoning: [
+        "Sorting dominates the proposed approach at O(n log n).",
+        "Removing duplicates from a sorted copy needs extra storage or mutates a transformed version.",
+        "A sliding window scans each character at most twice over the original order."
+      ],
+      bottlenecks: [
+        "Sorting is slower and also destroys the substring invariant.",
+        "The duplicate-removal step optimizes the wrong representation of the input."
+      ],
+      optimization_path: [
+        {
+          title: "Replace sorting with sliding window",
+          current: "Sort then remove adjacent duplicates",
+          improved: "Move right pointer, track last seen positions, advance left on duplicates",
+          why_it_helps:
+            "The scan becomes linear while preserving contiguity and original order."
+        },
+        {
+          title: "Use bounded memory for seen characters",
+          current: "Store/rebuild transformed string",
+          improved: "Store last index by character",
+          why_it_helps:
+            "Memory tracks only active constraint state instead of an unrelated sorted copy."
+        }
+      ],
+      clean_code_hints: [
+        "Name the window invariant before coding: current window has no repeated characters.",
+        "Use variables like left, right, lastSeen, and bestLength to make pointer roles obvious.",
+        "Write one edge-case test beside the code: s = 'abba' should return 2."
+      ]
+    };
+  }
+
+  if (combined.includes("two pointer") || combined.includes("two pointers")) {
+    return {
+      code_detected: codeDetected,
+      current_time_complexity: "O(n)",
+      current_space_complexity: "O(1)",
+      optimized_time_complexity: "O(n)",
+      optimized_space_complexity: "O(n)",
+      time_score: 78,
+      space_score: 94,
+      optimized_time_score: 82,
+      optimized_space_score: 68,
+      complexity_reasoning: [
+        "The proposed two-pointer scan is linear if the array is sorted.",
+        "For unsorted Two Sum, the pointer move rule is invalid even though the complexity looks attractive.",
+        "A hash map keeps linear time while preserving correctness for unsorted inputs."
+      ],
+      bottlenecks: [
+        "The main issue is correctness, not raw asymptotic runtime.",
+        "The valid optimization trades O(1) space for O(n) lookup memory."
+      ],
+      optimization_path: [
+        {
+          title: "Switch to hash map for unsorted input",
+          current: "Two pointers without sorted precondition",
+          improved: "One pass map from value to index",
+          why_it_helps:
+            "It keeps O(n) time and supports original-index return without relying on order."
+        }
+      ],
+      clean_code_hints: [
+        "Write the precondition above the chosen pattern: sorted input or hash map.",
+        "Use names like complement and indexByValue for readable lookup logic.",
+        "Keep duplicate handling explicit when the same value can appear twice."
+      ]
+    };
+  }
+
+  return {
+    code_detected: codeDetected,
+    current_time_complexity: "O(n)",
+    current_space_complexity: "O(1)",
+    optimized_time_complexity: "Depends on chosen pattern",
+    optimized_space_complexity: "Depends on chosen pattern",
+    time_score: 68,
+    space_score: 82,
+    optimized_time_score: 76,
+    optimized_space_score: 80,
+    complexity_reasoning: [
+      "MindPatch inferred a single-pass or pattern-level approach from the transcript.",
+      "The exact complexity may need code-level confirmation if the transcript omits loops or data structures.",
+      "The cleanest optimization starts by naming the invariant before selecting a pattern."
+    ],
+    bottlenecks: [
+      "The transcript does not expose enough implementation detail to prove the tight bound.",
+      "Pattern choice may be the bigger risk than micro-optimization."
+    ],
+    optimization_path: [
+      {
+        title: "Make the invariant explicit",
+        current: "Pattern chosen before full constraint proof",
+        improved: "State invariant, then choose data structure",
+        why_it_helps:
+          "It prevents hidden correctness bugs and makes complexity easier to justify."
+      }
+    ],
+    clean_code_hints: [
+      "Use variable names that encode roles, not types.",
+      "Keep edge-case guards before the main loop.",
+      "Add one comment only where it states an invariant or non-obvious tradeoff."
+    ]
   };
 }

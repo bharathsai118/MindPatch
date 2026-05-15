@@ -107,7 +107,7 @@ export function getIntegrationStatus(): IntegrationStatus {
       ? "Live HF Model"
       : agentProvider === "lyzr"
         ? "Live Lyzr Agents"
-        : "Demo Mode";
+        : "Local Fallback";
 
   return {
     omiConfigured,

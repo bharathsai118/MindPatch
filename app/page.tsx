@@ -3,8 +3,7 @@ import {
   BrainCircuit,
   Database,
   Mic2,
-  Route,
-  Trophy
+  Route
 } from "lucide-react";
 import Link from "next/link";
 import { HeroSection } from "@/components/HeroSection";
@@ -48,10 +47,10 @@ export default function HomePage() {
               A DSA tutor answers. MindPatch debugs the reasoning failure.
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              The demo intentionally catches a student who knows the topic but
-              violates a hidden constraint. That is the product: identify why
-              the thinking went wrong, retrieve prior evidence, then train the
-              student out of the pattern.
+              A real reasoning session can catch a student who knows the topic
+              but violates a hidden constraint. That is the product: identify
+              why the thinking went wrong, retrieve prior evidence, then train
+              the student out of the pattern.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -60,13 +59,6 @@ export default function HomePage() {
               >
                 Start Reasoning Session
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/session?judge=1"
-                className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:-translate-y-0.5 hover:bg-amber-100"
-              >
-                <Trophy className="h-4 w-4" />
-                Judge Demo Mode
               </Link>
             </div>
           </div>
@@ -149,7 +141,7 @@ export default function HomePage() {
                 Omi capture - Lyzr agents - Qdrant memory - MindPatch dashboard
               </div>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                Run the complete cognitive debugging demo.
+                Start a real cognitive debugging session.
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                 Add a Hugging Face token to run the cognitive agents through a
@@ -159,10 +151,10 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/session?judge=1"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-amber-200"
+              href="/session"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100"
             >
-              Judge Demo Mode
+              Start Session
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

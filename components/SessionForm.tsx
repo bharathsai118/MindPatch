@@ -1,28 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, BrainCircuit, PlayCircle, Send, Trophy } from "lucide-react";
+import { AlertCircle, BrainCircuit, Send } from "lucide-react";
 import { LoadingState } from "@/components/LoadingState";
 import { WorkflowTimeline, type WorkflowStep } from "@/components/WorkflowTimeline";
-import {
-  DEMO_PROBLEM_NAME,
-  DEMO_PROBLEM_TEXT,
-  DEMO_TRANSCRIPT
-} from "@/lib/demo-data";
 import type { AnalysisResult } from "@/lib/types";
-
-type SessionFormProps = {
-  initialDemo?: boolean;
-  judgeDemo?: boolean;
-};
 
 const workflowStages = [
   {
     label: "Transcript received",
     agent: "Omi Intake Adapter",
     description:
-      "Simulates ambient reasoning capture: spoken DSA explanation enters MindPatch without becoming an answer request.",
+      "Receives ambient reasoning capture: spoken DSA explanation enters MindPatch without becoming an answer request.",
     artifact: "raw speech -> structured transcript"
   },
   {
@@ -67,10 +57,7 @@ const emptySteps: WorkflowStep[] = workflowStages.map((stage) => ({
   status: "pending"
 }));
 
-export function SessionForm({
-  initialDemo = false,
-  judgeDemo = false
-}: SessionFormProps) {
+export function SessionForm() {
   const router = useRouter();
   const [problemName, setProblemName] = useState("");
   const [problemText, setProblemText] = useState("");
@@ -78,32 +65,6 @@ export function SessionForm({
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [error, setError] = useState("");
-  const judgeRunStarted = useRef(false);
-
-  useEffect(() => {
-    if (initialDemo || judgeDemo) {
-      setProblemName(DEMO_PROBLEM_NAME);
-      setProblemText(DEMO_PROBLEM_TEXT);
-      setTranscript(DEMO_TRANSCRIPT);
-    }
-  }, [initialDemo, judgeDemo]);
-
-  useEffect(() => {
-    if (!judgeDemo) return;
-    if (judgeRunStarted.current) return;
-    judgeRunStarted.current = true;
-    const timeout = window.setTimeout(() => {
-      const payload = {
-        problem_name: DEMO_PROBLEM_NAME,
-        problem_text: DEMO_PROBLEM_TEXT,
-        transcript: DEMO_TRANSCRIPT
-      };
-      void runAnalysis(payload);
-    }, 700);
-    return () => window.clearTimeout(timeout);
-    // runAnalysis intentionally stays outside deps so Judge Demo fires once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [judgeDemo]);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -168,24 +129,6 @@ export function SessionForm({
     }
   };
 
-  const fillDemo = () => {
-    setProblemName(DEMO_PROBLEM_NAME);
-    setProblemText(DEMO_PROBLEM_TEXT);
-    setTranscript(DEMO_TRANSCRIPT);
-  };
-
-  const runDemo = () => {
-    const payload = {
-      problem_name: DEMO_PROBLEM_NAME,
-      problem_text: DEMO_PROBLEM_TEXT,
-      transcript: DEMO_TRANSCRIPT
-    };
-    setProblemName(payload.problem_name);
-    setProblemText(payload.problem_text);
-    setTranscript(payload.transcript);
-    void runAnalysis(payload);
-  };
-
   return (
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
       <form
@@ -199,22 +142,6 @@ export function SessionForm({
           <BrainCircuit className="h-5 w-5 text-signal" />
           <h2 className="text-lg font-semibold text-ink">DSA Reasoning Input</h2>
         </div>
-        {judgeDemo ? (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <div className="flex items-start gap-3">
-              <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-              <div>
-                <p className="font-semibold text-amber-950">
-                  Judge Demo Mode is running
-                </p>
-                <p className="mt-1 text-sm leading-6 text-amber-900">
-                  Watch Omi-style capture feed Lyzr-style agents, which query
-                  Qdrant-style memory before producing a repair plan.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <label className="mt-5 block">
           <span className="text-sm font-semibold text-slate-700">Problem title</span>
@@ -265,34 +192,6 @@ export function SessionForm({
           >
             <Send className="h-4 w-4" />
             Analyze My Thinking
-          </button>
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-            disabled={isLoading}
-            onClick={runDemo}
-            type="button"
-          >
-            <PlayCircle className="h-4 w-4" />
-            Run Demo Transcript
-          </button>
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-            disabled={isLoading}
-            onClick={() => {
-              window.location.href = "/session?judge=1";
-            }}
-            type="button"
-          >
-            <Trophy className="h-4 w-4" />
-            Judge Demo Mode
-          </button>
-          <button
-            className="inline-flex items-center justify-center rounded-md px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
-            disabled={isLoading}
-            onClick={fillDemo}
-            type="button"
-          >
-            Fill Demo Only
           </button>
         </div>
       </form>

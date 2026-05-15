@@ -8,12 +8,14 @@ import {
   Network,
   ShieldAlert
 } from "lucide-react";
+import { CodeComplexityCard } from "@/components/CodeComplexityCard";
 import { CognitiveBugCard } from "@/components/CognitiveBugCard";
 import { EmptyState } from "@/components/EmptyState";
 import { MemoryReplayCard } from "@/components/MemoryReplayCard";
 import { ReasoningTraceCard } from "@/components/ReasoningTraceCard";
 import { SocraticRepairCard } from "@/components/SocraticRepairCard";
 import { TrainingPlanCard } from "@/components/TrainingPlanCard";
+import { mockCodeComplexityAnalysis } from "@/lib/agents/mock-agents";
 import { getIntegrationStatus } from "@/lib/config";
 import { getAnalysisById } from "@/lib/storage/json-store";
 
@@ -46,6 +48,20 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
   }
 
   const bugFound = analysis.mistake_report.mistake_found;
+  const codeComplexity =
+    analysis.code_complexity ??
+    mockCodeComplexityAnalysis({
+      input: {
+        problem_name: analysis.problem_name,
+        problem_text: analysis.problem_text,
+        transcript: analysis.cleaned_transcript,
+        topic: analysis.topic,
+        difficulty: analysis.difficulty,
+        user_id: analysis.user_id
+      },
+      cleanedTranscript: analysis.cleaned_transcript,
+      mistake: analysis.mistake_report
+    });
   const pipeline = [
     {
       icon: Mic2,
@@ -192,6 +208,9 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <ReasoningTraceCard trace={analysis.reasoning_trace} />
           <CognitiveBugCard report={analysis.mistake_report} />
+          <div className="lg:col-span-2">
+            <CodeComplexityCard analysis={codeComplexity} />
+          </div>
           <MemoryReplayCard
             mistakeFound={bugFound}
             replay={analysis.memory_replay}

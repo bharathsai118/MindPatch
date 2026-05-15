@@ -102,7 +102,7 @@ export function ProgressDashboard({ progress }: ProgressDashboardProps) {
         <div className="mt-5 space-y-3">
           {progress.recent_sessions.length === 0 ? (
             <p className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              Run the demo to create the first session.
+              Analyze a reasoning transcript to create the first session.
             </p>
           ) : (
             progress.recent_sessions.map((session) => (

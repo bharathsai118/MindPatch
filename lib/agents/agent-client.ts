@@ -7,6 +7,8 @@ export async function invokeAgentJson<T>(args: {
   sessionId: string;
   prompt: string;
   fallback: () => Promise<T> | T;
+  allowFallbackOnLiveFailure?: boolean;
+  timeoutMs?: number;
 }): Promise<T> {
   const status = getIntegrationStatus();
 
@@ -18,6 +20,7 @@ export async function invokeAgentJson<T>(args: {
     });
 
     if (lyzrOutput) return lyzrOutput;
+    if (args.allowFallbackOnLiveFailure) return args.fallback();
     throw new Error(
       "Lyzr agent call failed. Check LYZR_API_KEY, LYZR_AGENT_ID, and agent access."
     );
@@ -26,10 +29,12 @@ export async function invokeAgentJson<T>(args: {
   if (status.agentProvider === "huggingface") {
     const huggingFaceOutput = await invokeHuggingFaceJson<T>({
       agentName: args.agentName,
-      prompt: args.prompt
+      prompt: args.prompt,
+      timeoutMs: args.timeoutMs
     });
 
     if (huggingFaceOutput) return huggingFaceOutput;
+    if (args.allowFallbackOnLiveFailure) return args.fallback();
     throw new Error(
       "Hugging Face agent call failed. Check HF_TOKEN, HUGGINGFACE_MODEL, and Inference Provider access."
     );

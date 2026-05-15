@@ -3,6 +3,7 @@ import { invokeAgentJson } from "@/lib/agents/agent-client";
 import {
   inferDifficulty,
   inferTopic,
+  mockCodeComplexityAnalysis,
   mockMistakeClassifier,
   mockReasoningTrace,
   mockSocraticCoach,
@@ -17,6 +18,7 @@ import {
 import type {
   AnalysisResult,
   AnalyzeSessionInput,
+  CodeComplexityAnalysis,
   MemoryReplay,
   MistakeReport,
   ReasoningTrace,
@@ -44,6 +46,88 @@ function normalizeMistakeReport(report: MistakeReport): MistakeReport {
       report.correct_pattern ||
       "Reinforce the solution by explaining the invariant, stop condition, and edge-case coverage.",
     severity: "low"
+  };
+}
+
+function asStringList(value: unknown, fallback: string[]) {
+  if (!Array.isArray(value)) return fallback;
+
+  const strings = value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter(Boolean);
+
+  return strings.length > 0 ? strings : fallback;
+}
+
+function asScore(value: unknown, fallback: number) {
+  const score = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(score)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function normalizeCodeComplexityAnalysis(
+  report: CodeComplexityAnalysis,
+  fallback: CodeComplexityAnalysis
+): CodeComplexityAnalysis {
+  const optimizationPath = Array.isArray(report.optimization_path)
+    ? report.optimization_path
+        .map((item) => ({
+          title:
+            typeof item?.title === "string" && item.title.trim()
+              ? item.title
+              : "Optimization step",
+          current:
+            typeof item?.current === "string" && item.current.trim()
+              ? item.current
+              : fallback.optimization_path[0]?.current ?? "Current approach",
+          improved:
+            typeof item?.improved === "string" && item.improved.trim()
+              ? item.improved
+              : fallback.optimization_path[0]?.improved ?? "Improved approach",
+          why_it_helps:
+            typeof item?.why_it_helps === "string" && item.why_it_helps.trim()
+              ? item.why_it_helps
+              : fallback.optimization_path[0]?.why_it_helps ??
+                "This improves the reasoning-to-code path."
+        }))
+        .filter((item) => item.title)
+    : fallback.optimization_path;
+
+  return {
+    code_detected:
+      typeof report.code_detected === "boolean"
+        ? report.code_detected
+        : fallback.code_detected,
+    current_time_complexity:
+      report.current_time_complexity || fallback.current_time_complexity,
+    current_space_complexity:
+      report.current_space_complexity || fallback.current_space_complexity,
+    optimized_time_complexity:
+      report.optimized_time_complexity || fallback.optimized_time_complexity,
+    optimized_space_complexity:
+      report.optimized_space_complexity || fallback.optimized_space_complexity,
+    time_score: asScore(report.time_score, fallback.time_score),
+    space_score: asScore(report.space_score, fallback.space_score),
+    optimized_time_score: asScore(
+      report.optimized_time_score,
+      fallback.optimized_time_score
+    ),
+    optimized_space_score: asScore(
+      report.optimized_space_score,
+      fallback.optimized_space_score
+    ),
+    complexity_reasoning: asStringList(
+      report.complexity_reasoning,
+      fallback.complexity_reasoning
+    ),
+    bottlenecks: asStringList(report.bottlenecks, fallback.bottlenecks),
+    optimization_path:
+      optimizationPath.length > 0 ? optimizationPath : fallback.optimization_path,
+    clean_code_hints: asStringList(
+      report.clean_code_hints,
+      fallback.clean_code_hints
+    )
   };
 }
 
@@ -220,6 +304,66 @@ async function trainingPlanAgent(args: {
   });
 }
 
+async function codeComplexityAgent(args: {
+  input: AnalyzeSessionInput;
+  cleanedTranscript: string;
+  trace: ReasoningTrace;
+  mistake: MistakeReport;
+  sessionId: string;
+}): Promise<CodeComplexityAnalysis> {
+  const fallback = mockCodeComplexityAnalysis({
+    input: args.input,
+    cleanedTranscript: args.cleanedTranscript,
+    mistake: args.mistake
+  });
+  const report = await invokeAgentJson<CodeComplexityAnalysis>({
+    agentName: "Code Complexity Analyst Agent",
+    sessionId: args.sessionId,
+    prompt: JSON.stringify({
+      task:
+        "Analyze the student's code or algorithmic reasoning for time complexity, space complexity, optimization opportunities, and clean-code improvements. If code is absent, analyze the proposed algorithm from the transcript. Return JSON only.",
+      problem: {
+        name: args.input.problem_name,
+        text: args.input.problem_text
+      },
+      cleaned_transcript: args.cleanedTranscript,
+      reasoning_steps: args.trace.reasoning_steps,
+      cognitive_verdict: args.mistake,
+      scoring_rule:
+        "Use scores from 0 to 100 where higher is better. Optimized scores should reflect the best realistic approach for this problem, not fantasy constant time.",
+      output_schema: {
+        code_detected: "boolean",
+        current_time_complexity: "string like O(n), O(n log n), O(log n), O(1)",
+        current_space_complexity: "string",
+        optimized_time_complexity: "string",
+        optimized_space_complexity: "string",
+        time_score: "number 0-100",
+        space_score: "number 0-100",
+        optimized_time_score: "number 0-100",
+        optimized_space_score: "number 0-100",
+        complexity_reasoning: ["short reason 1", "short reason 2"],
+        bottlenecks: ["bottleneck 1", "bottleneck 2"],
+        optimization_path: [
+          {
+            title: "string",
+            current: "string",
+            improved: "string",
+            why_it_helps: "string"
+          }
+        ],
+        clean_code_hints: [
+          "specific hint about naming, invariants, guard clauses, comments, or structure"
+        ]
+      }
+    }),
+    fallback: () => fallback,
+    allowFallbackOnLiveFailure: true,
+    timeoutMs: 25000
+  });
+
+  return normalizeCodeComplexityAnalysis(report, fallback);
+}
+
 export async function analyzeReasoningSession(
   input: AnalyzeSessionInput
 ): Promise<AnalysisResult> {
@@ -241,24 +385,35 @@ export async function analyzeReasoningSession(
     trace,
     sessionId
   }));
-  const memoryReplay = mistake.mistake_found
-    ? await memoryRetrievalAgent({
+  const memoryReplayPromise = mistake.mistake_found
+    ? memoryRetrievalAgent({
         problemName: input.problem_name,
         topic,
         mistake
       })
-    : { similar_memories: [] };
-  const socraticRepair = await socraticCoachAgent({
+    : Promise.resolve({ similar_memories: [] });
+  const codeComplexityPromise = codeComplexityAgent({
+    input,
+    cleanedTranscript: cleaner.cleaned_transcript,
+    trace,
     mistake,
-    memoryReplay,
     sessionId
   });
-  const trainingPlan = await trainingPlanAgent({
-    mistake,
-    memoryReplay,
-    topic,
-    sessionId
-  });
+  const memoryReplay = await memoryReplayPromise;
+  const [socraticRepair, trainingPlan, codeComplexity] = await Promise.all([
+    socraticCoachAgent({
+      mistake,
+      memoryReplay,
+      sessionId
+    }),
+    trainingPlanAgent({
+      mistake,
+      memoryReplay,
+      topic,
+      sessionId
+    }),
+    codeComplexityPromise
+  ]);
 
   const analysis: AnalysisResult = {
     session_id: sessionId,
@@ -275,6 +430,7 @@ export async function analyzeReasoningSession(
     memory_replay: memoryReplay,
     socratic_repair: socraticRepair,
     training_plan: trainingPlan,
+    code_complexity: codeComplexity,
     created_at: createdAt
   };
 

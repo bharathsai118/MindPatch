@@ -40,8 +40,8 @@ export default async function MemoryPage() {
           <EmptyState
             title="No mistake memories yet"
             description="Run a reasoning session and MindPatch will store the first cognitive bug memory."
-            actionHref="/session?demo=1"
-            actionLabel="Run Demo"
+            actionHref="/session"
+            actionLabel="Start Session"
           />
         ) : (
           <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">

@@ -96,6 +96,29 @@ export type TrainingPlan = {
   daily_reflection: string;
 };
 
+export type ComplexityOptimization = {
+  title: string;
+  current: string;
+  improved: string;
+  why_it_helps: string;
+};
+
+export type CodeComplexityAnalysis = {
+  code_detected: boolean;
+  current_time_complexity: string;
+  current_space_complexity: string;
+  optimized_time_complexity: string;
+  optimized_space_complexity: string;
+  time_score: number;
+  space_score: number;
+  optimized_time_score: number;
+  optimized_space_score: number;
+  complexity_reasoning: string[];
+  bottlenecks: string[];
+  optimization_path: ComplexityOptimization[];
+  clean_code_hints: string[];
+};
+
 export type AnalysisResult = {
   session_id: string;
   user_id: string;
@@ -111,6 +134,7 @@ export type AnalysisResult = {
   memory_replay: MemoryReplay;
   socratic_repair: SocraticRepair;
   training_plan: TrainingPlan;
+  code_complexity?: CodeComplexityAnalysis;
   created_at: string;
 };
 

@@ -28,6 +28,7 @@ function buildSystemPrompt(agentName: string) {
 export async function invokeHuggingFaceJson<T>(args: {
   agentName: string;
   prompt: string;
+  timeoutMs?: number;
 }): Promise<T | null> {
   if (!getIntegrationStatus().huggingFaceConfigured) {
     return null;
@@ -37,9 +38,16 @@ export async function invokeHuggingFaceJson<T>(args: {
   const baseUrl = getHuggingFaceBaseUrl().replace(/\/$/, "");
   const model = getHuggingFaceModel();
 
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
   try {
+    const controller = args.timeoutMs ? new AbortController() : undefined;
+    timeout = args.timeoutMs
+      ? setTimeout(() => controller?.abort(), args.timeoutMs)
+      : undefined;
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
+      signal: controller?.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
@@ -72,5 +80,7 @@ export async function invokeHuggingFaceJson<T>(args: {
     return parsed ? (parsed as T) : null;
   } catch {
     return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }

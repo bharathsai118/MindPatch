@@ -1,4 +1,4 @@
-import { BrainCircuit, Trophy } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 import Link from "next/link";
 import { getIntegrationStatus } from "@/lib/config";
 
@@ -45,13 +45,6 @@ export function Navbar() {
           >
             {status.modeLabel}
           </span>
-          <Link
-            href="/session?judge=1"
-            className="hidden items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:inline-flex"
-          >
-            <Trophy className="h-4 w-4" />
-            Judge Demo
-          </Link>
         </div>
       </nav>
     </header>

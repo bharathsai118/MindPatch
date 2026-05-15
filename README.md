@@ -8,7 +8,7 @@ MindPatch is not another answer generator. It listens to a student's spoken DSA 
 
 Most AI tutors optimize for getting the final answer. MindPatch optimizes for debugging the student's thinking.
 
-In the demo, a student tries to solve Longest Substring by sorting the string. A normal tutor would explain sliding window. MindPatch does something more valuable:
+In a typical reasoning session, a student may try to solve Longest Substring by sorting the string. A normal tutor would explain sliding window. MindPatch does something more valuable:
 
 1. Captures the spoken reasoning.
 2. Reconstructs the student's mental steps.
@@ -38,41 +38,9 @@ The winning pitch:
 
 > Most AI tools help students get answers. MindPatch helps students understand why they think wrong, remember those reasoning mistakes, and autonomously train them to improve.
 
-## Judge Demo Mode
-
-Click **Judge Demo Mode** on the home page or open:
-
-```text
-http://localhost:3000/session?judge=1
-```
-
-The app automatically runs the full demo:
-
-1. Loads the Longest Substring problem.
-2. Injects a flawed spoken transcript.
-3. Runs the autonomous workflow timeline.
-4. Retrieves similar past cognitive mistakes.
-5. Produces a Cognitive Bug Report.
-6. Generates Socratic Repair.
-7. Creates an Autonomous Training Plan.
-
-Demo transcript:
-
-```text
-I am solving longest substring without repeating characters. I think I can sort the string first and then remove duplicate adjacent characters. That should give me the longest unique substring.
-```
-
-Expected cognitive bug:
-
-- Mistake type: `constraint_misunderstanding`
-- Mistake: sorting destroys original substring order and contiguity
-- Correct pattern: sliding window over original indices
-- Socratic question: "What does the word substring require that sorting destroys?"
-- Memory replay: similar Two Sum mistake where two pointers were used before checking sorted order
-
 ## Ecosystem Usage
 
-- **Omi = ambient reasoning capture.** The student explains their approach out loud while solving; MindPatch receives the transcript through `/api/omi/webhook` or the manual/demo input.
+- **Omi = ambient reasoning capture.** The student explains their approach out loud while solving; MindPatch receives the transcript through `/api/omi/webhook` or manual transcript input.
 - **Lyzr = autonomous agent orchestration.** MindPatch models the workflow as specialized agents for cleaning, tracing, classifying, retrieving memory, coaching, and planning.
 - **Hugging Face = live model execution + embeddings.** When `HF_TOKEN` or `HUGGINGFACE_API_KEY` is present, the same agents call a real Hugging Face chat model, and mistake memories can be embedded with Hugging Face feature extraction.
 - **Qdrant = long-term cognitive mistake memory.** Mistakes are embedded semantically and stored in Qdrant Cloud so the system can replay similar prior failures across DSA topics.
@@ -83,7 +51,7 @@ If credentials are missing, the app still works:
 - Missing Qdrant credentials activate local dynamic vector memory.
 - Missing embedding credentials activate deterministic local embeddings.
 
-This makes the hackathon demo reliable while still showing exactly where live integrations connect.
+This keeps the product usable while still showing exactly where live integrations connect.
 
 ## Features
 
@@ -91,9 +59,9 @@ This makes the hackathon demo reliable while still showing exactly where live in
 - Cognitive Bug Report
 - Mistake Memory Replay
 - Socratic Repair
+- Code Complexity & Optimization
 - Autonomous Training Plan
 - Cognitive Progress Score
-- Judge Demo Mode
 - Omi webhook endpoint
 - Lyzr adapter with fallback workflow
 - Hugging Face model adapter for live DSA reasoning analysis
@@ -113,6 +81,7 @@ Workflow agents:
 4. Memory Retrieval Agent
 5. Socratic Coach Agent
 6. Training Plan Agent
+7. Code Complexity Analyst Agent
 
 ## Run Locally
 
@@ -246,7 +215,7 @@ Correct approach: [correct_pattern]
 
 ## Seed Memories
 
-The demo starts with realistic past mistakes:
+MindPatch starts with realistic seed memories:
 
 - **Two Sum**: student used two pointers without checking sorted order.
 - **Number of Islands**: student explored only right and down, confusing coverage with deduplication.
@@ -263,11 +232,12 @@ npm run build
 
 Suggested smoke test:
 
-1. Open `/session?judge=1`.
-2. Let the auto-demo run.
-3. Confirm the analysis page shows:
+1. Open `/session`.
+2. Enter a DSA problem, problem statement, and reasoning transcript.
+3. Submit the form and confirm the analysis page shows:
    - Reasoning Trace
    - Cognitive Bug Report
+   - Code Complexity & Optimization
    - Mistake Memory Replay
    - Socratic Repair
    - Autonomous Training Plan
@@ -279,11 +249,11 @@ The first MVP worked, but a judge could miss the product thesis because:
 
 - The landing page sounded like a polished tutor, not a cognitive debugger.
 - The Omi/Lyzr/Qdrant roles were present but not unmistakable.
-- The demo flow looked like a form submission instead of an autonomous system.
+- The session flow looked like a form submission instead of an autonomous system.
 - The analysis page buried the verdict inside normal cards.
 - The README explained setup before it sold the idea.
 
-The current version fixes those issues by making the cognitive-debugging loop visible on the landing page, demo timeline, analysis verdict, memory replay, and README.
+The current version fixes those issues by making the cognitive-debugging loop visible on the landing page, workflow timeline, analysis verdict, memory replay, and README.
 
 ## Why It Wins
 
