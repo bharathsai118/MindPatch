@@ -1,0 +1,14 @@
+services:
+  mindpatch:
+    build:
+      context: .
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+    volumes:
+      - mindpatch-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mindpatch-data:

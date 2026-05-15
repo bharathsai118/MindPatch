@@ -104,6 +104,36 @@ Open:
 http://localhost:3000
 ```
 
+## Run With Docker
+
+Build and run the production container:
+
+```bash
+docker build -t mindpatch .
+docker run --env-file .env.local -p 3000:3000 -v mindpatch-data:/app/data mindpatch
+```
+
+Or use Docker Compose:
+
+```bash
+copy .env.example .env.local
+docker compose up --build
+```
+
+On macOS/Linux, use `cp .env.example .env.local` before `docker compose up --build`.
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Notes:
+
+- `.env.local` is passed at runtime and is not copied into the Docker image.
+- The app writes local JSON storage to `/app/data`; mount a volume to keep sessions and memories after container restarts.
+- Qdrant and Hugging Face keys work the same way in Docker through environment variables.
+
 ## Environment Variables
 
 ```bash

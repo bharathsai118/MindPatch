@@ -1,7 +1,11 @@
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { SEED_MEMORIES } from "@/lib/demo-data";
-import type { AnalysisResult, MistakeMemory } from "@/lib/types";
+import type {
+  AnalysisFeedbackValue,
+  AnalysisResult,
+  MistakeMemory
+} from "@/lib/types";
 
 type MindPatchDb = {
   analyses: AnalysisResult[];
@@ -97,6 +101,33 @@ export async function getAnalysisById(
 export async function getAnalyses(): Promise<AnalysisResult[]> {
   const db = await readDb();
   return db.analyses;
+}
+
+export async function updateAnalysisFeedback(
+  sessionId: string,
+  value: AnalysisFeedbackValue
+): Promise<AnalysisResult | null> {
+  let updatedAnalysis: AnalysisResult | null = null;
+
+  await mutateDb((db) => {
+    const existingIndex = db.analyses.findIndex(
+      (item) => item.session_id === sessionId
+    );
+
+    if (existingIndex < 0) return;
+
+    const updatedAt = new Date().toISOString();
+    updatedAnalysis = {
+      ...db.analyses[existingIndex],
+      feedback: {
+        value,
+        updated_at: updatedAt
+      }
+    };
+    db.analyses[existingIndex] = updatedAnalysis;
+  });
+
+  return updatedAnalysis;
 }
 
 export async function saveMemory(memory: MistakeMemory): Promise<void> {

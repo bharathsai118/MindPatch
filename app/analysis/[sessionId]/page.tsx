@@ -211,7 +211,9 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
           <div className="lg:col-span-2">
             <CodeComplexityCard
               analysis={codeComplexity}
+              feedback={analysis.feedback?.value ?? null}
               mistake={analysis.mistake_report}
+              sessionId={analysis.session_id}
               transcript={analysis.cleaned_transcript}
             />
           </div>

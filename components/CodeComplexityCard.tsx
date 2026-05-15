@@ -3,17 +3,22 @@ import {
   ChevronDown,
   Code2,
   GitBranch,
-  ThumbsDown,
-  ThumbsUp,
   Wand2,
   Zap
 } from "lucide-react";
-import type { CodeComplexityAnalysis, MistakeReport } from "@/lib/types";
+import { AnalysisFeedbackButtons } from "@/components/AnalysisFeedbackButtons";
+import type {
+  AnalysisFeedbackValue,
+  CodeComplexityAnalysis,
+  MistakeReport
+} from "@/lib/types";
 
 type CodeComplexityCardProps = {
   analysis: CodeComplexityAnalysis;
   transcript: string;
   mistake: MistakeReport;
+  sessionId: string;
+  feedback?: AnalysisFeedbackValue;
 };
 
 function normalizeBigO(value: string) {
@@ -65,13 +70,15 @@ function getCodeLines(transcript: string) {
 
 function ComplexityGraph({ label }: { label: string }) {
   return (
-    <div className="relative min-h-36 overflow-hidden rounded-lg bg-[#24252d] p-4">
-      <p className="absolute right-8 top-2 font-serif text-lg font-semibold italic text-white">
-        {normalizeBigO(label)}
-      </p>
+    <div className="flex min-h-44 flex-col overflow-hidden rounded-lg bg-[#24252d] p-3">
+      <div className="flex justify-end">
+        <p className="max-w-full rounded-full bg-slate-950/70 px-3 py-1 text-right font-serif text-sm font-semibold italic leading-5 text-white ring-1 ring-white/10 sm:text-base">
+          {normalizeBigO(label)}
+        </p>
+      </div>
       <svg
         aria-hidden="true"
-        className="absolute bottom-3 right-4 h-32 w-44"
+        className="mt-2 h-32 w-full max-w-56 self-end"
         viewBox="0 0 180 130"
       >
         <path d="M18 112H160" stroke="#3f414a" strokeWidth="1.5" />
@@ -168,7 +175,9 @@ function CodePreview({
 export function CodeComplexityCard({
   analysis,
   transcript,
-  mistake
+  mistake,
+  sessionId,
+  feedback = null
 }: CodeComplexityCardProps) {
   const currentApproach =
     analysis.approach_current ||
@@ -202,10 +211,10 @@ export function CodeComplexityCard({
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-3 text-slate-400">
-          <ThumbsUp className="h-4 w-4" />
-          <ThumbsDown className="h-4 w-4" />
-        </div>
+        <AnalysisFeedbackButtons
+          initialValue={feedback}
+          sessionId={sessionId}
+        />
       </header>
 
       <div className="space-y-5 p-5">

@@ -126,6 +126,13 @@ export type CodeComplexityAnalysis = {
   style_suggestions?: string;
 };
 
+export type AnalysisFeedbackValue = "like" | "dislike" | null;
+
+export type AnalysisFeedback = {
+  value: AnalysisFeedbackValue;
+  updated_at: string;
+};
+
 export type AnalysisResult = {
   session_id: string;
   user_id: string;
@@ -142,6 +149,7 @@ export type AnalysisResult = {
   socratic_repair: SocraticRepair;
   training_plan: TrainingPlan;
   code_complexity?: CodeComplexityAnalysis;
+  feedback?: AnalysisFeedback;
   created_at: string;
 };
 
