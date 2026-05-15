@@ -31,6 +31,22 @@ export function formatComplexityLabel(value: string) {
     .replace(/\bn\b/g, "N");
 }
 
+export function formatOperationCount(value: number) {
+  if (!Number.isFinite(value)) return "0";
+
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  }
+
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}k`;
+  }
+
+  if (value % 1 === 0) return value.toString();
+
+  return value.toFixed(value < 10 ? 2 : 1);
+}
+
 function sanitizeComplexityLabel(value: string) {
   return value
     .toLowerCase()
@@ -59,6 +75,13 @@ function parseComplexity(value: string): CurveDefinition {
     return {
       family: "bounded-linear",
       estimate: (inputSize) => Math.min(inputSize, 64)
+    };
+  }
+
+  if (/max\((n|d),?(m|k|[a-z]+)\)/.test(normalized)) {
+    return {
+      family: "max-linear",
+      estimate: (inputSize) => inputSize
     };
   }
 
@@ -119,7 +142,14 @@ function parseComplexity(value: string): CurveDefinition {
     };
   }
 
-  if (/[a-z]\+[a-z]|n\+m|m\+n|o\([^)]*n/.test(normalized)) {
+  if (/[a-z]\+[a-z]|n\+m|m\+n/.test(normalized)) {
+    return {
+      family: "multi-input-linear",
+      estimate: (inputSize) => inputSize * 2
+    };
+  }
+
+  if (/o\([^)]*n/.test(normalized)) {
     return {
       family: "linear",
       estimate: (inputSize) => inputSize

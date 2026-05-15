@@ -5,6 +5,7 @@ import {
   COMPLEXITY_SAMPLE_SIZES,
   buildComplexityComparison,
   formatComplexityLabel,
+  formatOperationCount,
   type ComplexityCurvePoint,
   type ComplexityCurveSeries
 } from "@/lib/complexity-curve";
@@ -18,24 +19,27 @@ type ComplexityGrowthChartProps = {
   suggestedSpace: string;
 };
 
-function chartPath(points: ComplexityCurvePoint[]) {
-  const chart = {
-    bottom: 138,
-    height: 106,
-    left: 38,
-    top: 18,
-    width: 248
-  };
+const CHART = {
+  bottom: 138,
+  height: 106,
+  left: 58,
+  top: 18,
+  width: 228
+};
 
+const TICK_RATIOS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+function chartPath(points: ComplexityCurvePoint[]) {
   return points
     .map((point, index) => {
       const x =
-        chart.left +
-        (index / Math.max(points.length - 1, 1)) * chart.width;
-      const y = chart.bottom - Math.min(point.normalizedValue, 1) * chart.height;
+        CHART.left +
+        (index / Math.max(points.length - 1, 1)) * CHART.width;
+      const y =
+        CHART.bottom - Math.min(point.normalizedValue, 1) * CHART.height;
 
       return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${Math.max(
-        chart.top,
+        CHART.top,
         y
       ).toFixed(1)}`;
     })
@@ -43,15 +47,12 @@ function chartPath(points: ComplexityCurvePoint[]) {
 }
 
 function chartPoint(point: ComplexityCurvePoint, index: number, count: number) {
-  const left = 38;
-  const top = 18;
-  const width = 248;
-  const bottom = 138;
-  const height = 106;
-
   return {
-    x: left + (index / Math.max(count - 1, 1)) * width,
-    y: Math.max(top, bottom - Math.min(point.normalizedValue, 1) * height)
+    x: CHART.left + (index / Math.max(count - 1, 1)) * CHART.width,
+    y: Math.max(
+      CHART.top,
+      CHART.bottom - Math.min(point.normalizedValue, 1) * CHART.height
+    )
   };
 }
 
@@ -149,6 +150,9 @@ function drawSeries({
 
         return (
           <circle
+            aria-label={`N=${point.inputSize}, operations=${formatOperationCount(
+              point.operations
+            )}`}
             cx={coordinates.x}
             cy={coordinates.y}
             fill={active ? color : "#64748b"}
@@ -184,7 +188,8 @@ export function ComplexityGrowthChart({
             Time and Space Complexity
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Select Current or Suggested to inspect the generated Big-O curve.
+            Select a curve to see calculated Big-O operation estimates for each
+            sampled input size.
           </p>
         </div>
 
@@ -223,7 +228,7 @@ export function ComplexityGrowthChart({
         aria-label={`${selected} time complexity ${activeSeries.normalizedLabel}`}
         className="mt-4 h-64 w-full"
         role="img"
-        viewBox="0 0 310 178"
+        viewBox="0 0 330 178"
       >
         <defs>
           <marker
@@ -238,27 +243,39 @@ export function ComplexityGrowthChart({
           </marker>
         </defs>
         <path
-          d="M38 138H292"
+          d={`M${CHART.left} ${CHART.bottom}H306`}
           markerEnd="url(#mindpatch-axis-arrow)"
           stroke="#94a3b8"
           strokeWidth="1.6"
         />
         <path
-          d="M38 138V14"
+          d={`M${CHART.left} ${CHART.bottom}V14`}
           markerEnd="url(#mindpatch-axis-arrow)"
           stroke="#94a3b8"
           strokeWidth="1.6"
         />
-        {[0.25, 0.5, 0.75].map((ratio) => {
-          const y = 138 - ratio * 106;
+        {TICK_RATIOS.map((ratio) => {
+          const y = CHART.bottom - ratio * CHART.height;
           return (
-            <path
-              d={`M38 ${y.toFixed(1)}H286`}
-              key={ratio}
-              stroke="#353843"
-              strokeDasharray="4 6"
-              strokeWidth="1"
-            />
+            <g key={ratio}>
+              {ratio > 0 ? (
+                <path
+                  d={`M${CHART.left} ${y.toFixed(1)}H300`}
+                  stroke="#353843"
+                  strokeDasharray="4 6"
+                  strokeWidth="1"
+                />
+              ) : null}
+              <text
+                fill="#94a3b8"
+                fontSize="8.5"
+                textAnchor="end"
+                x={CHART.left - 7}
+                y={y + 3}
+              >
+                {formatOperationCount(comparison.maxOperations * ratio)}
+              </text>
+            </g>
           );
         })}
 
@@ -273,29 +290,63 @@ export function ComplexityGrowthChart({
           tone: "suggested"
         })}
 
-        <text fill="#cbd5e1" fontSize="10" fontWeight="700" x="52" y="29">
+        <text fill="#cbd5e1" fontSize="10" fontWeight="700" x="72" y="29">
           {selected === "current" ? "Current" : "Suggested"}{" "}
           {activeSeries.normalizedLabel}
         </text>
         <text
           fill="#94a3b8"
           fontSize="9"
-          transform="rotate(-90 14 88)"
-          x="14"
+          transform="rotate(-90 18 88)"
+          x="18"
           y="88"
         >
-          operations
+          calculated operations
         </text>
-        <text fill="#94a3b8" fontSize="9" textAnchor="middle" x="162" y="170">
+        <text fill="#94a3b8" fontSize="9" textAnchor="middle" x="182" y="170">
           input size
         </text>
-        <text fill="#94a3b8" fontSize="9" x="37" y="154">
+        <text fill="#94a3b8" fontSize="9" x={CHART.left - 1} y="154">
           N={COMPLEXITY_SAMPLE_SIZES[0]}
         </text>
-        <text fill="#94a3b8" fontSize="9" textAnchor="end" x="286" y="154">
+        <text fill="#94a3b8" fontSize="9" textAnchor="end" x="300" y="154">
           N={COMPLEXITY_SAMPLE_SIZES[COMPLEXITY_SAMPLE_SIZES.length - 1]}
         </text>
       </svg>
+
+      <div className="mt-2 rounded-lg border border-white/10 bg-slate-950/35 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Calculated values
+          </p>
+          <p className="text-xs text-slate-500">
+            {activeSeries.normalizedLabel}: sampled estimated operations
+          </p>
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Multi-input labels such as O(N + M) assume M grows with N for this
+          comparison.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {activeSeries.points.map((point) => (
+            <div
+              className="rounded-md border border-white/10 bg-[#24252d] px-3 py-2"
+              key={point.inputSize}
+            >
+              <p className="text-[11px] font-semibold text-slate-500">
+                N={point.inputSize}
+              </p>
+              <p
+                className={`mt-1 font-mono text-sm font-bold ${
+                  selected === "suggested" ? "text-emerald-300" : "text-white"
+                }`}
+              >
+                {formatOperationCount(point.operations)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
         <span className="inline-flex items-center gap-2">
