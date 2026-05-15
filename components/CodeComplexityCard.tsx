@@ -68,11 +68,30 @@ function getCodeLines(transcript: string) {
   return lines.slice(firstCodeLine).filter((line) => line.trim().length > 0);
 }
 
-function ComplexityGraph({ label }: { label: string }) {
+function ComplexityGraph({
+  label,
+  title,
+  tone = "current"
+}: {
+  label: string;
+  title: string;
+  tone?: "current" | "suggested";
+}) {
+  const isSuggested = tone === "suggested";
+
   return (
     <div className="flex min-h-44 flex-col overflow-hidden rounded-lg bg-[#24252d] p-3">
-      <div className="flex justify-end">
-        <p className="max-w-full rounded-full bg-slate-950/70 px-3 py-1 text-right font-serif text-sm font-semibold italic leading-5 text-white ring-1 ring-white/10 sm:text-base">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {title}
+        </span>
+        <p
+          className={`max-w-full rounded-full px-3 py-1 text-right font-serif text-sm font-semibold italic leading-5 ring-1 sm:text-base ${
+            isSuggested
+              ? "bg-emerald-400/10 text-emerald-300 ring-emerald-300/20"
+              : "bg-slate-950/70 text-white ring-white/10"
+          }`}
+        >
           {normalizeBigO(label)}
         </p>
       </div>
@@ -93,7 +112,7 @@ function ComplexityGraph({ label }: { label: string }) {
         <path
           d="M18 112L160 8"
           fill="none"
-          stroke="#a7abb6"
+          stroke={isSuggested ? "#34d399" : "#a7abb6"}
           strokeLinecap="round"
           strokeWidth="3"
         />
@@ -249,7 +268,7 @@ export function CodeComplexityCard({
           </div>
         </section>
 
-        <section className="grid gap-5 rounded-lg bg-[#25232c] p-5 lg:grid-cols-[1fr_0.38fr]">
+        <section className="grid gap-5 rounded-lg bg-[#25232c] p-5 xl:grid-cols-[1fr_0.95fr]">
           <div>
             <div className="flex items-center gap-2 text-lg font-semibold text-violet-400">
               <Zap className="h-5 w-5" />
@@ -284,7 +303,17 @@ export function CodeComplexityCard({
               </p>
             </div>
           </div>
-          <ComplexityGraph label={analysis.optimized_time_complexity} />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <ComplexityGraph
+              label={analysis.current_time_complexity}
+              title="Current"
+            />
+            <ComplexityGraph
+              label={analysis.optimized_time_complexity}
+              title="Suggested"
+              tone="suggested"
+            />
+          </div>
         </section>
 
         <CodePreview

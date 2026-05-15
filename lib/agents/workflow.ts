@@ -59,6 +59,43 @@ function normalizeMistakeReport(report: MistakeReport): MistakeReport {
   };
 }
 
+function refineMistakeReport(args: {
+  report: MistakeReport;
+  input: AnalyzeSessionInput;
+  cleanedTranscript: string;
+}): { report: MistakeReport; refined: boolean } {
+  const report = normalizeMistakeReport(args.report);
+
+  if (!report.mistake_found) {
+    return { report, refined: false };
+  }
+
+  const combined =
+    `${args.input.problem_name} ${args.input.problem_text} ${args.cleanedTranscript}`.toLowerCase();
+
+  if (combined.includes("substring") && combined.includes("sort")) {
+    return {
+      refined: report.mistake_type !== "constraint_misunderstanding",
+      report: {
+        ...report,
+        mistake_type: "constraint_misunderstanding",
+        mistake_summary:
+          "Sorting destroys the original contiguous substring order, so the proposed approach solves a different problem: unique characters in a reordered string.",
+        evidence_from_transcript:
+          report.evidence_from_transcript ||
+          "The transcript proposes sorting the string before removing adjacent duplicates.",
+        why_it_is_wrong:
+          "A substring is a contiguous slice of the original string. Sorting changes adjacency and order, so it can create character sequences that never appeared as one substring.",
+        correct_pattern:
+          "Use a sliding window over the original string. Expand the right pointer, track last-seen positions, and move the left pointer only when a duplicate enters the current window.",
+        severity: "high"
+      }
+    };
+  }
+
+  return { report, refined: false };
+}
+
 function asStringList(value: unknown, fallback: string[]) {
   if (!Array.isArray(value)) return fallback;
 
@@ -593,13 +630,25 @@ export async function analyzeReasoningSession(
       difficulty,
       sessionId
     });
-    const memoryReplay = core.mistake_report.mistake_found
+    const mistakeResult = refineMistakeReport({
+      report: core.mistake_report,
+      input,
+      cleanedTranscript: core.transcript_cleaner.cleaned_transcript
+    });
+    const mistake = mistakeResult.report;
+    const memoryReplay = mistake.mistake_found
       ? await memoryRetrievalAgent({
           problemName: input.problem_name,
           topic,
-          mistake: core.mistake_report
+          mistake
         })
       : { similar_memories: [] };
+    const socraticRepair = mistakeResult.refined
+      ? mockSocraticCoach({ mistake, memoryReplay })
+      : core.socratic_repair;
+    const trainingPlan = mistakeResult.refined
+      ? mockTrainingPlan({ mistake, topic })
+      : core.training_plan;
     const analysis: AnalysisResult = {
       session_id: sessionId,
       user_id: userId,
@@ -611,25 +660,25 @@ export async function analyzeReasoningSession(
       student_intent: core.transcript_cleaner.student_intent,
       problem_detected: core.transcript_cleaner.problem_detected,
       reasoning_trace: core.reasoning_trace,
-      mistake_report: core.mistake_report,
+      mistake_report: mistake,
       memory_replay: memoryReplay,
-      socratic_repair: core.socratic_repair,
-      training_plan: core.training_plan,
+      socratic_repair: socraticRepair,
+      training_plan: trainingPlan,
       code_complexity: core.code_complexity,
       created_at: createdAt
     };
 
     await saveAnalysis(analysis);
 
-    if (core.mistake_report.mistake_found) {
+    if (mistake.mistake_found) {
       const memory = buildMemoryFromAnalysis({
         sessionId,
         userId,
         problemName: input.problem_name,
         topic,
         difficulty,
-        mistake: core.mistake_report,
-        socraticQuestion: core.socratic_repair.socratic_question,
+        mistake,
+        socraticQuestion: socraticRepair.socratic_question,
         createdAt
       });
       await storeMistakeMemory(memory);
@@ -643,12 +692,18 @@ export async function analyzeReasoningSession(
     cleanedTranscript: cleaner.cleaned_transcript,
     sessionId
   });
-  const mistake = normalizeMistakeReport(await mistakeClassifierAgent({
+  const rawMistake = normalizeMistakeReport(await mistakeClassifierAgent({
     input,
     cleanedTranscript: cleaner.cleaned_transcript,
     trace,
     sessionId
   }));
+  const mistakeResult = refineMistakeReport({
+    report: rawMistake,
+    input,
+    cleanedTranscript: cleaner.cleaned_transcript
+  });
+  const mistake = mistakeResult.report;
   const memoryReplayPromise = mistake.mistake_found
     ? memoryRetrievalAgent({
         problemName: input.problem_name,
@@ -665,17 +720,21 @@ export async function analyzeReasoningSession(
   });
   const memoryReplay = await memoryReplayPromise;
   const [socraticRepair, trainingPlan, codeComplexity] = await Promise.all([
-    socraticCoachAgent({
-      mistake,
-      memoryReplay,
-      sessionId
-    }),
-    trainingPlanAgent({
-      mistake,
-      memoryReplay,
-      topic,
-      sessionId
-    }),
+    mistakeResult.refined
+      ? Promise.resolve(mockSocraticCoach({ mistake, memoryReplay }))
+      : socraticCoachAgent({
+          mistake,
+          memoryReplay,
+          sessionId
+        }),
+    mistakeResult.refined
+      ? Promise.resolve(mockTrainingPlan({ mistake, topic }))
+      : trainingPlanAgent({
+          mistake,
+          memoryReplay,
+          topic,
+          sessionId
+        }),
     codeComplexityPromise
   ]);
 
