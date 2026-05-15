@@ -7,6 +7,8 @@ import {
   Zap
 } from "lucide-react";
 import { AnalysisFeedbackButtons } from "@/components/AnalysisFeedbackButtons";
+import { ComplexityGrowthChart } from "@/components/ComplexityGrowthChart";
+import { formatComplexityLabel } from "@/lib/complexity-curve";
 import type {
   AnalysisFeedbackValue,
   CodeComplexityAnalysis,
@@ -20,10 +22,6 @@ type CodeComplexityCardProps = {
   sessionId: string;
   feedback?: AnalysisFeedbackValue;
 };
-
-function normalizeBigO(value: string) {
-  return value.replace(/log10\s*n/gi, "log N").replace(/\bn\b/g, "N");
-}
 
 function getPrimarySuggestion(analysis: CodeComplexityAnalysis) {
   const alreadyOptimal =
@@ -66,74 +64,6 @@ function getCodeLines(transcript: string) {
 
   if (firstCodeLine < 0) return [];
   return lines.slice(firstCodeLine).filter((line) => line.trim().length > 0);
-}
-
-function ComplexityGraph({
-  label,
-  title,
-  tone = "current"
-}: {
-  label: string;
-  title: string;
-  tone?: "current" | "suggested";
-}) {
-  const isSuggested = tone === "suggested";
-
-  return (
-    <div className="flex min-h-44 flex-col overflow-hidden rounded-lg bg-[#24252d] p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-          {title}
-        </span>
-        <p
-          className={`max-w-full rounded-full px-3 py-1 text-right font-serif text-sm font-semibold italic leading-5 ring-1 sm:text-base ${
-            isSuggested
-              ? "bg-emerald-400/10 text-emerald-300 ring-emerald-300/20"
-              : "bg-slate-950/70 text-white ring-white/10"
-          }`}
-        >
-          {normalizeBigO(label)}
-        </p>
-      </div>
-      <svg
-        aria-hidden="true"
-        className="mt-2 h-32 w-full max-w-56 self-end"
-        viewBox="0 0 180 130"
-      >
-        <path d="M18 112H160" stroke="#3f414a" strokeWidth="1.5" />
-        <path d="M18 112V8" stroke="#3f414a" strokeWidth="1.5" />
-        <path
-          d="M18 112C50 98 89 86 160 82"
-          fill="none"
-          stroke="#555862"
-          strokeLinecap="round"
-          strokeWidth="2.5"
-        />
-        <path
-          d="M18 112L160 8"
-          fill="none"
-          stroke={isSuggested ? "#34d399" : "#a7abb6"}
-          strokeLinecap="round"
-          strokeWidth="3"
-        />
-        <path
-          d="M18 112C40 72 50 35 60 8"
-          fill="none"
-          stroke="#5f626d"
-          strokeLinecap="round"
-          strokeWidth="3"
-        />
-        <path
-          d="M18 112C30 70 36 36 42 8"
-          fill="none"
-          stroke="#4a4d58"
-          strokeLinecap="round"
-          strokeWidth="3"
-        />
-        <path d="M18 118H160" stroke="#353740" strokeWidth="1.5" />
-      </svg>
-    </div>
-  );
 }
 
 function CodePreview({
@@ -278,22 +208,24 @@ export function CodeComplexityCard({
               <p>
                 <span className="text-slate-300">Current complexity:</span>{" "}
                 <strong className="font-serif text-lg italic">
-                  {normalizeBigO(analysis.current_time_complexity)}
+                  {formatComplexityLabel(analysis.current_time_complexity)}
                 </strong>
                 <span className="text-slate-500"> time</span>
                 <span className="text-slate-500"> / </span>
-                <strong>{normalizeBigO(analysis.current_space_complexity)}</strong>
+                <strong>
+                  {formatComplexityLabel(analysis.current_space_complexity)}
+                </strong>
                 <span className="text-slate-500"> space</span>
               </p>
               <p>
                 <span className="text-slate-300">Suggested complexity:</span>{" "}
                 <strong className="font-serif text-lg italic text-emerald-400">
-                  {normalizeBigO(analysis.optimized_time_complexity)}
+                  {formatComplexityLabel(analysis.optimized_time_complexity)}
                 </strong>
                 <span className="text-slate-500"> time</span>
                 <span className="text-slate-500"> / </span>
                 <strong className="text-emerald-400">
-                  {normalizeBigO(analysis.optimized_space_complexity)}
+                  {formatComplexityLabel(analysis.optimized_space_complexity)}
                 </strong>
                 <span className="text-slate-500"> space</span>
               </p>
@@ -303,17 +235,12 @@ export function CodeComplexityCard({
               </p>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            <ComplexityGraph
-              label={analysis.current_time_complexity}
-              title="Current"
-            />
-            <ComplexityGraph
-              label={analysis.optimized_time_complexity}
-              title="Suggested"
-              tone="suggested"
-            />
-          </div>
+          <ComplexityGrowthChart
+            currentSpace={analysis.current_space_complexity}
+            currentTime={analysis.current_time_complexity}
+            suggestedSpace={analysis.optimized_space_complexity}
+            suggestedTime={analysis.optimized_time_complexity}
+          />
         </section>
 
         <CodePreview
